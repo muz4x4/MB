@@ -1,0 +1,943 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="mobile-web-app-capable" content="yes">
+<title>Market Board</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Space+Grotesk:wght@400;500;600;700&display=swap');
+
+  :root{
+    --bg: #14110F;
+    --panel: #1C1815;
+    --panel-2: #211C18;
+    --line: #35302A;
+    --ink: #EDE6DA;
+    --ink-dim: #9C948A;
+    --amber: #E8A33D;
+    --amber-dim: #7A5A28;
+    --up: #6FA97A;
+    --down: #C1554A;
+  }
+
+  *{ box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
+
+  html,body{
+    height:100%;
+    background:var(--bg);
+    color:var(--ink);
+    overflow:hidden;
+    font-family:'Space Grotesk',sans-serif;
+    -webkit-user-select:none; user-select:none;
+  }
+
+  #app{
+    height:100vh;
+    width:100vw;
+    padding: max(28px, env(safe-area-inset-top)) max(32px, env(safe-area-inset-right)) max(28px, env(safe-area-inset-bottom)) max(32px, env(safe-area-inset-left));
+    display:flex;
+    flex-direction:column;
+    gap:20px;
+  }
+
+  /* ---------- header ---------- */
+  header{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+  }
+  .brand{
+    display:flex;
+    align-items:baseline;
+    gap:10px;
+  }
+  .brand .mark{
+    font-family:'DM Mono',monospace;
+    color:var(--amber);
+    font-size:14px;
+    letter-spacing:.18em;
+  }
+  .brand h1{
+    font-size:15px;
+    letter-spacing:.28em;
+    font-weight:600;
+    color:var(--ink-dim);
+    text-transform:uppercase;
+  }
+  .clock{
+    font-family:'DM Mono',monospace;
+    font-size:14px;
+    color:var(--ink-dim);
+    letter-spacing:.05em;
+    display:flex;
+    align-items:center;
+    gap:14px;
+  }
+  .dot{
+    width:7px;height:7px;border-radius:50%;
+    background:var(--ink-dim);
+    transition:background .3s;
+  }
+  .dot.live{ background:var(--up); box-shadow:0 0 8px var(--up); }
+  .dot.err{ background:var(--down); box-shadow:0 0 8px var(--down); }
+  .gear{
+    width:34px;height:34px;
+    border-radius:50%;
+    border:1px solid var(--line);
+    display:flex;align-items:center;justify-content:center;
+    color:var(--ink-dim);
+    cursor:pointer;
+    font-size:16px;
+  }
+
+  /* ---------- status banner ---------- */
+  .banner{
+    display:none;
+    align-items:center;
+    justify-content:space-between;
+    gap:14px;
+    background:rgba(193,85,74,.10);
+    border:1px solid rgba(193,85,74,.35);
+    color:var(--down);
+    border-radius:10px;
+    padding:10px 16px;
+    font-size:13px;
+    line-height:1.5;
+    flex-shrink:0;
+  }
+  .banner.show{ display:flex; }
+  .banner button{
+    background:transparent;
+    border:1px solid var(--down);
+    color:var(--down);
+    padding:6px 12px;
+    font-size:12px;
+    border-radius:6px;
+    flex-shrink:0;
+  }
+
+  /* ---------- hero (BTC) ---------- */
+  .hero{
+    background:linear-gradient(180deg,var(--panel),var(--panel-2));
+    border:1px solid var(--line);
+    border-radius:14px;
+    padding:26px 32px;
+    position:relative;
+    overflow:hidden;
+    flex-shrink:0;
+  }
+  .hero::before{
+    content:"";
+    position:absolute; left:0; top:0; bottom:0; width:4px;
+    background:var(--amber);
+  }
+  .hero-top{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+  }
+  .hero-label{
+    font-size:13px;
+    letter-spacing:.24em;
+    color:var(--ink-dim);
+    text-transform:uppercase;
+    margin-bottom:10px;
+  }
+  .hero-price{
+    font-family:'DM Mono',monospace;
+    font-size:clamp(48px,8vw,92px);
+    font-weight:500;
+    line-height:1;
+    color:var(--ink);
+    letter-spacing:-.01em;
+  }
+  .flipchar{
+    display:inline-block;
+    transition:transform .22s ease, opacity .22s ease;
+    transform-origin:50% 60%;
+  }
+  .flipchar.flip{ transform:rotateX(90deg); opacity:0; }
+  .hero-right{
+    text-align:right;
+  }
+  .hero-change{
+    font-family:'DM Mono',monospace;
+    font-size:20px;
+    padding:6px 14px;
+    border-radius:8px;
+    display:inline-block;
+  }
+  .hero-change.up{ color:var(--up); background:rgba(111,169,122,.12); }
+  .hero-change.down{ color:var(--down); background:rgba(193,85,74,.12); }
+  .hero-sub{
+    margin-top:10px;
+    font-size:13px;
+    color:var(--ink-dim);
+    font-family:'DM Mono',monospace;
+  }
+  .spark-wrap{
+    margin-top:18px;
+    height:70px;
+  }
+  .spark-wrap svg{ width:100%; height:100%; overflow:visible; }
+  .spark-label{
+    font-family:'DM Mono',monospace;
+    font-size:11px;
+    color:var(--ink-dim);
+    letter-spacing:.1em;
+    margin-top:6px;
+  }
+
+  /* ---------- cycle tile ---------- */
+  .cycle{
+    flex:1;
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:14px;
+    display:flex;
+    flex-direction:column;
+    overflow:hidden;
+  }
+  .cycle-empty{
+    flex:1;
+    display:flex; align-items:center; justify-content:center;
+    color:var(--ink-dim);
+    font-size:14px;
+    text-align:center;
+    padding:20px;
+    line-height:1.6;
+  }
+  .cycle-body{
+    flex:1;
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+    padding:20px 34px;
+    cursor:pointer;
+  }
+  .cycle-top{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    margin-bottom:14px;
+  }
+  .cycle-sym{
+    font-family:'DM Mono',monospace;
+    font-size:20px;
+    letter-spacing:.1em;
+    color:var(--ink);
+  }
+  .cycle-kind{
+    font-size:10px;
+    letter-spacing:.14em;
+    color:var(--amber-dim);
+    background:rgba(232,163,61,.08);
+    border:1px solid var(--amber-dim);
+    border-radius:4px;
+    padding:2px 6px;
+    text-transform:uppercase;
+  }
+  .cycle-row{
+    display:flex;
+    align-items:baseline;
+    justify-content:space-between;
+    gap:20px;
+  }
+  .cycle-price{
+    font-family:'DM Mono',monospace;
+    font-size:clamp(34px,5.5vw,58px);
+  }
+  .cycle-chg{
+    font-family:'DM Mono',monospace;
+    font-size:18px;
+    padding:5px 12px;
+    border-radius:8px;
+  }
+  .cycle-chg.up{ color:var(--up); background:rgba(111,169,122,.12); }
+  .cycle-chg.down{ color:var(--down); background:rgba(193,85,74,.12); }
+  .cycle-stale{ opacity:.4; font-size:14px; font-family:'DM Mono',monospace; margin-top:6px; }
+  .dots{
+    display:flex;
+    gap:6px;
+    padding:14px 34px 18px;
+  }
+  .dots .d{
+    width:6px;height:6px;border-radius:50%;
+    background:var(--line);
+    transition:background .3s;
+  }
+  .dots .d.active{ background:var(--amber); }
+
+  footer{
+    display:flex;
+    justify-content:space-between;
+    font-family:'DM Mono',monospace;
+    font-size:11px;
+    color:var(--ink-dim);
+    letter-spacing:.06em;
+    flex-shrink:0;
+  }
+
+  /* ---------- settings drawer ---------- */
+  .backdrop{
+    position:fixed; inset:0;
+    background:rgba(0,0,0,.55);
+    opacity:0; pointer-events:none;
+    transition:opacity .25s;
+    z-index:10;
+  }
+  .backdrop.open{ opacity:1; pointer-events:auto; }
+  .drawer{
+    position:fixed; right:0; top:0; bottom:0;
+    width:min(420px,92vw);
+    background:var(--panel);
+    border-left:1px solid var(--line);
+    transform:translateX(100%);
+    transition:transform .3s ease;
+    z-index:11;
+    padding:28px 26px;
+    overflow-y:auto;
+  }
+  .drawer.open{ transform:translateX(0); }
+  .drawer h2{
+    font-size:13px;
+    letter-spacing:.2em;
+    text-transform:uppercase;
+    color:var(--ink-dim);
+    margin-bottom:20px;
+  }
+  .field{ margin-bottom:22px; }
+  .field label{
+    display:block;
+    font-size:12px;
+    color:var(--ink-dim);
+    margin-bottom:8px;
+    letter-spacing:.05em;
+  }
+  .field .hint{
+    font-size:11px;
+    color:var(--ink-dim);
+    margin-top:6px;
+    line-height:1.5;
+  }
+  .field .hint a{ color:var(--amber); }
+  input[type=text],input[type=password],select{
+    width:100%;
+    background:var(--bg);
+    border:1px solid var(--line);
+    border-radius:8px;
+    color:var(--ink);
+    font-family:'DM Mono',monospace;
+    font-size:14px;
+    padding:10px 12px;
+  }
+  .row-add{ display:flex; gap:8px; }
+  .row-add input{ flex:1; }
+  button{
+    font-family:'Space Grotesk',sans-serif;
+    font-weight:600;
+    border:none;
+    border-radius:8px;
+    cursor:pointer;
+  }
+  .btn-amber{
+    background:var(--amber);
+    color:#1a1410;
+    padding:10px 16px;
+    font-size:13px;
+  }
+  .btn-ghost{
+    background:transparent;
+    border:1px solid var(--line);
+    color:var(--ink-dim);
+    width:100%;
+    padding:12px;
+    font-size:13px;
+    margin-top:8px;
+  }
+  .chips{ display:flex; flex-wrap:wrap; gap:8px; margin-top:10px; }
+  .chip{
+    display:flex; align-items:center; gap:8px;
+    background:var(--bg);
+    border:1px solid var(--line);
+    border-radius:20px;
+    padding:6px 6px 6px 12px;
+    font-family:'DM Mono',monospace;
+    font-size:13px;
+  }
+  .chip .x{
+    width:18px;height:18px;
+    border-radius:50%;
+    background:var(--line);
+    display:flex;align-items:center;justify-content:center;
+    font-size:11px;
+    cursor:pointer;
+    color:var(--ink);
+  }
+  .save-note{
+    font-size:12px;
+    color:var(--up);
+    height:16px;
+    margin-top:10px;
+  }
+</style>
+</head>
+<body>
+
+<div id="app">
+  <header>
+    <div class="brand">
+      <span class="mark">◆</span>
+      <h1>Market Board</h1>
+    </div>
+    <div class="clock">
+      <span class="dot" id="statusDot"></span>
+      <span id="clockText">--:--:--</span>
+      <div class="gear" id="gearBtn">⚙</div>
+    </div>
+  </header>
+
+  <div class="banner" id="banner">
+    <span id="bannerText">—</span>
+    <button id="retryBtn">Retry</button>
+  </div>
+
+  <div class="hero" id="hero">
+    <div class="hero-top">
+      <div>
+        <div class="hero-label" id="heroLabel">BTC / USD</div>
+        <div class="hero-price" id="heroPrice">— — — — —</div>
+      </div>
+      <div class="hero-right">
+        <div class="hero-change" id="heroChange">—</div>
+        <div class="hero-sub" id="heroSub">waiting for data…</div>
+      </div>
+    </div>
+    <div class="spark-wrap"><svg id="sparkSvg" viewBox="0 0 600 70" preserveAspectRatio="none"></svg></div>
+    <div class="spark-label" id="sparkLabel">24H RANGE</div>
+  </div>
+
+  <div class="cycle" id="cycle">
+    <div class="cycle-empty">No other tickers added yet.<br>Tap ⚙ to add crypto or stock symbols — they'll cycle here.</div>
+  </div>
+
+  <footer>
+    <span id="lastUpdated">Not yet updated</span>
+    <span>Kept awake while open · Add to Home Screen for full screen</span>
+  </footer>
+</div>
+
+<div class="backdrop" id="backdrop"></div>
+<div class="drawer" id="drawer">
+  <h2>Configure Board</h2>
+
+  <div class="field">
+    <label>Display currency</label>
+    <select id="currencySelect">
+      <option value="usd">USD</option>
+      <option value="aud">AUD</option>
+    </select>
+  </div>
+
+  <div class="field">
+    <label>Refresh interval (price data)</label>
+    <select id="intervalSelect">
+      <option value="30">Every 30 seconds</option>
+      <option value="60">Every 60 seconds</option>
+      <option value="300">Every 5 minutes</option>
+    </select>
+  </div>
+
+  <div class="field">
+    <label>Cycle speed (secondary tickers)</label>
+    <select id="cycleSelect">
+      <option value="4">Every 4 seconds</option>
+      <option value="6">Every 6 seconds</option>
+      <option value="10">Every 10 seconds</option>
+    </select>
+  </div>
+
+  <div class="field">
+    <label>Twelve Data API key (for stocks)</label>
+    <input type="password" id="apiKeyInput" placeholder="paste key here">
+    <div class="hint">Free key from <a href="https://twelvedata.com/pricing" target="_blank">twelvedata.com</a> (800 requests/day, plenty for this). Crypto works without a key. Leave blank to show crypto only.</div>
+  </div>
+
+  <div class="field">
+    <label>Crypto (CoinGecko IDs — e.g. bitcoin, ethereum, solana)</label>
+    <div class="row-add">
+      <input type="text" id="cryptoInput" placeholder="e.g. ethereum">
+      <button class="btn-amber" id="addCrypto">Add</button>
+    </div>
+    <div class="chips" id="cryptoChips"></div>
+  </div>
+
+  <div class="field">
+    <label>Stocks (ticker symbol — e.g. TSLA, NVDA, GOOGL)</label>
+    <div class="row-add">
+      <input type="text" id="stockInput" placeholder="e.g. TSLA">
+      <button class="btn-amber" id="addStock">Add</button>
+    </div>
+    <div class="chips" id="stockChips"></div>
+  </div>
+
+  <button class="btn-ghost" id="closeDrawer">Close & refresh</button>
+  <div class="save-note" id="saveNote"></div>
+</div>
+
+<script>
+const STORAGE_KEY = 'market-board-settings';
+const DEFAULTS = {
+  currency: 'usd',
+  interval: 60,
+  cycleSeconds: 6,
+  apiKey: '',
+  cryptoExtra: [],   // besides bitcoin, which is always the hero
+  stocks: []
+};
+
+let settings = { ...DEFAULTS };
+let lastValues = {};      // dom-id -> last displayed price string, for flip diffing
+let latestData = {};      // 'crypto-eth' / 'stock-TSLA' -> {price, change, currency}
+let priceTimer = null;
+let cycleTimer = null;
+let cycleItems = [];
+let cycleIndex = 0;
+
+// ---------- storage ----------
+// Uses the browser's own localStorage, scoped to this page's URL.
+// Settings persist on this device/browser only — no account, no sync.
+function loadSettings(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(raw){
+      settings = { ...DEFAULTS, ...JSON.parse(raw) };
+    }
+  }catch(e){
+    console.error('load failed', e); // no saved settings yet, or storage unavailable
+  }
+  hydrateDrawer();
+}
+
+function saveSettings(){
+  try{
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
+    const note = document.getElementById('saveNote');
+    note.textContent = 'Saved';
+    setTimeout(()=> note.textContent = '', 1500);
+  }catch(e){
+    console.error('save failed', e);
+  }
+}
+
+// ---------- drawer wiring ----------
+function hydrateDrawer(){
+  document.getElementById('currencySelect').value = settings.currency;
+  document.getElementById('intervalSelect').value = String(settings.interval);
+  document.getElementById('cycleSelect').value = String(settings.cycleSeconds);
+  document.getElementById('apiKeyInput').value = settings.apiKey;
+  renderChips();
+}
+
+function renderChips(){
+  const cWrap = document.getElementById('cryptoChips');
+  cWrap.innerHTML = '';
+  settings.cryptoExtra.forEach(id=>{
+    const chip = document.createElement('div');
+    chip.className = 'chip';
+    chip.innerHTML = `<span>${id}</span><div class="x">✕</div>`;
+    chip.querySelector('.x').onclick = ()=>{
+      settings.cryptoExtra = settings.cryptoExtra.filter(x=>x!==id);
+      renderChips(); saveSettings(); buildCycleItems(); refreshAll();
+    };
+    cWrap.appendChild(chip);
+  });
+
+  const sWrap = document.getElementById('stockChips');
+  sWrap.innerHTML = '';
+  settings.stocks.forEach(sym=>{
+    const chip = document.createElement('div');
+    chip.className = 'chip';
+    chip.innerHTML = `<span>${sym}</span><div class="x">✕</div>`;
+    chip.querySelector('.x').onclick = ()=>{
+      settings.stocks = settings.stocks.filter(x=>x!==sym);
+      renderChips(); saveSettings(); buildCycleItems(); refreshAll();
+    };
+    sWrap.appendChild(chip);
+  });
+}
+
+document.getElementById('gearBtn').onclick = ()=>{
+  document.getElementById('backdrop').classList.add('open');
+  document.getElementById('drawer').classList.add('open');
+};
+document.getElementById('backdrop').onclick = closeDrawer;
+document.getElementById('closeDrawer').onclick = closeDrawer;
+document.getElementById('retryBtn').onclick = refreshAll;
+
+function closeDrawer(){
+  document.getElementById('backdrop').classList.remove('open');
+  document.getElementById('drawer').classList.remove('open');
+  settings.currency = document.getElementById('currencySelect').value;
+  settings.interval = parseInt(document.getElementById('intervalSelect').value,10);
+  settings.cycleSeconds = parseInt(document.getElementById('cycleSelect').value,10);
+  settings.apiKey = document.getElementById('apiKeyInput').value.trim();
+  saveSettings();
+  buildCycleItems();
+  restartPriceTimer();
+  restartCycleTimer();
+  refreshAll();
+}
+
+document.getElementById('addCrypto').onclick = ()=>{
+  const inp = document.getElementById('cryptoInput');
+  const val = inp.value.trim().toLowerCase();
+  if(val && !settings.cryptoExtra.includes(val) && val !== 'bitcoin'){
+    settings.cryptoExtra.push(val);
+    inp.value='';
+    renderChips(); saveSettings(); buildCycleItems(); refreshAll();
+  }
+};
+document.getElementById('addStock').onclick = ()=>{
+  const inp = document.getElementById('stockInput');
+  const val = inp.value.trim().toUpperCase();
+  if(val && !settings.stocks.includes(val)){
+    settings.stocks.push(val);
+    inp.value='';
+    renderChips(); saveSettings(); buildCycleItems(); refreshAll();
+  }
+};
+
+// ---------- clock ----------
+function tickClock(){
+  const now = new Date();
+  document.getElementById('clockText').textContent = now.toLocaleTimeString('en-AU',{hour12:false});
+}
+setInterval(tickClock, 1000);
+tickClock();
+
+// ---------- status banner ----------
+function showBanner(msg){
+  document.getElementById('bannerText').textContent = msg;
+  document.getElementById('banner').classList.add('show');
+}
+function hideBanner(){
+  document.getElementById('banner').classList.remove('show');
+}
+
+// ---------- flip render helper ----------
+function renderFlip(el, newText){
+  const old = lastValues[el.id] || '';
+  if(old === newText){
+    if(!el.dataset.built) buildSpans(el, newText);
+    return;
+  }
+  lastValues[el.id] = newText;
+  buildSpans(el, newText, old);
+}
+
+function buildSpans(el, text, oldText){
+  el.dataset.built = '1';
+  const chars = text.split('');
+  const oldChars = (oldText||'').split('');
+  el.innerHTML = '';
+  chars.forEach((ch,i)=>{
+    const span = document.createElement('span');
+    span.className = 'flipchar';
+    span.textContent = ch;
+    el.appendChild(span);
+    if(oldText !== undefined && oldChars[i] !== ch){
+      span.classList.add('flip');
+      setTimeout(()=>{ span.classList.remove('flip'); }, 220);
+    }
+  });
+}
+
+// ---------- money formatting ----------
+function fmtMoney(n, currency){
+  if(n === null || n === undefined || isNaN(n)) return '—';
+  const symbol = currency === 'usd' ? '$' : 'A$';
+  const decimals = n < 10 ? 4 : 2;
+  return symbol + n.toLocaleString('en-AU',{minimumFractionDigits:decimals,maximumFractionDigits:decimals});
+}
+
+// ---------- cycle tile (secondary tickers) ----------
+function buildCycleItems(){
+  cycleItems = [
+    ...settings.cryptoExtra.map(c=>({type:'crypto',key:c})),
+    ...settings.stocks.map(s=>({type:'stock',key:s}))
+  ];
+  cycleIndex = 0;
+  const wrap = document.getElementById('cycle');
+  if(cycleItems.length === 0){
+    wrap.innerHTML = '<div class="cycle-empty">No other tickers added yet.<br>Tap ⚙ to add crypto or stock symbols — they\'ll cycle here.</div>';
+    return;
+  }
+  wrap.innerHTML = `
+    <div class="cycle-body" id="cycleBody">
+      <div class="cycle-top">
+        <span class="cycle-sym" id="cycleSym">—</span>
+        <span class="cycle-kind" id="cycleKind">—</span>
+      </div>
+      <div class="cycle-row">
+        <span class="cycle-price" id="cyclePrice">—</span>
+        <span class="cycle-chg" id="cycleChg">—</span>
+      </div>
+      <div class="cycle-stale" id="cycleStale"></div>
+    </div>
+    <div class="dots" id="cycleDots"></div>
+  `;
+  const dotsWrap = document.getElementById('cycleDots');
+  cycleItems.forEach((_,i)=>{
+    const d = document.createElement('div');
+    d.className = 'd' + (i===0 ? ' active' : '');
+    dotsWrap.appendChild(d);
+  });
+  document.getElementById('cycleBody').onclick = ()=>{
+    advanceCycle();
+    restartCycleTimer();
+  };
+  renderCycleTile();
+}
+
+function advanceCycle(){
+  if(cycleItems.length === 0) return;
+  cycleIndex = (cycleIndex + 1) % cycleItems.length;
+  renderCycleTile();
+}
+
+function renderCycleTile(){
+  if(cycleItems.length === 0) return;
+  const item = cycleItems[cycleIndex];
+  const key = item.type + '-' + item.key;
+  const data = latestData[key];
+
+  document.getElementById('cycleSym').textContent = item.key.toUpperCase();
+  document.getElementById('cycleKind').textContent = item.type === 'crypto' ? 'crypto' : 'stock';
+
+  const priceEl = document.getElementById('cyclePrice');
+  const chgEl = document.getElementById('cycleChg');
+  const staleEl = document.getElementById('cycleStale');
+
+  if(data && data.price !== null && data.price !== undefined){
+    renderFlip(priceEl, data.priceText);
+    if(data.change !== null && data.change !== undefined){
+      chgEl.textContent = (data.change>=0?'▲ ':'▼ ') + Math.abs(data.change).toFixed(2) + '%';
+      chgEl.className = 'cycle-chg ' + (data.change>=0?'up':'down');
+    }else{
+      chgEl.textContent = '';
+    }
+    staleEl.textContent = '';
+  }else{
+    priceEl.textContent = '—';
+    chgEl.textContent = '';
+    staleEl.textContent = item.type === 'stock' && !settings.apiKey
+      ? 'add a Twelve Data API key in settings'
+      : 'no data yet';
+  }
+
+  document.querySelectorAll('#cycleDots .d').forEach((d,i)=>{
+    d.classList.toggle('active', i===cycleIndex);
+  });
+}
+
+function restartCycleTimer(){
+  if(cycleTimer) clearInterval(cycleTimer);
+  if(cycleItems.length > 1){
+    cycleTimer = setInterval(advanceCycle, settings.cycleSeconds * 1000);
+  }
+}
+
+// ---------- sparkline (24h BTC) ----------
+async function fetchSparkline(){
+  try{
+    const url = `https://api.coingecko.com/api/v3/coins/bitcoin/market_chart?vs_currency=${settings.currency}&days=1`;
+    const res = await fetch(url);
+    if(!res.ok) throw new Error('sparkline ' + res.status);
+    const data = await res.json();
+    drawSparkline(data.prices || []);
+  }catch(e){
+    console.error('sparkline fetch failed', e);
+  }
+}
+
+function drawSparkline(points){
+  const svg = document.getElementById('sparkSvg');
+  if(points.length < 2){ svg.innerHTML = ''; return; }
+  const prices = points.map(p=>p[1]);
+  const min = Math.min(...prices);
+  const max = Math.max(...prices);
+  const range = (max - min) || 1;
+  const W = 600, H = 70, PAD = 4;
+
+  const coords = points.map((p,i)=>{
+    const x = (i / (points.length - 1)) * W;
+    const y = H - PAD - ((p[1] - min) / range) * (H - PAD*2);
+    return [x,y];
+  });
+
+  const linePath = coords.map((c,i)=> (i===0?'M':'L') + c[0].toFixed(1) + ',' + c[1].toFixed(1)).join(' ');
+  const areaPath = linePath + ` L${W},${H} L0,${H} Z`;
+
+  const up = prices[prices.length-1] >= prices[0];
+  const stroke = up ? 'var(--up)' : 'var(--down)';
+
+  svg.innerHTML = `
+    <defs>
+      <linearGradient id="sparkFill" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="${up ? '#6FA97A' : '#C1554A'}" stop-opacity="0.28"/>
+        <stop offset="100%" stop-color="${up ? '#6FA97A' : '#C1554A'}" stop-opacity="0"/>
+      </linearGradient>
+    </defs>
+    <path d="${areaPath}" fill="url(#sparkFill)" stroke="none"/>
+    <path d="${linePath}" fill="none" stroke="${stroke}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+  `;
+
+  document.getElementById('sparkLabel').textContent =
+    `24H RANGE  ·  LOW ${fmtMoney(min, settings.currency)}  ·  HIGH ${fmtMoney(max, settings.currency)}`;
+}
+
+// ---------- fetchers ----------
+async function fetchCrypto(){
+  const ids = ['bitcoin', ...settings.cryptoExtra];
+  const vs = settings.currency;
+  const url = `https://api.coingecko.com/api/v3/simple/price?ids=${ids.join(',')}&vs_currencies=${vs}&include_24hr_change=true`;
+  const res = await fetch(url);
+  if(!res.ok) throw new Error('coingecko ' + res.status);
+  return res.json();
+}
+
+async function fetchStocks(){
+  if(!settings.apiKey || settings.stocks.length === 0) return {};
+  const symbols = settings.stocks.join(',');
+  const url = `https://api.twelvedata.com/quote?symbol=${symbols}&apikey=${settings.apiKey}`;
+  const res = await fetch(url);
+  if(!res.ok) throw new Error('twelvedata ' + res.status);
+  const data = await res.json();
+  if(settings.stocks.length === 1) return { [settings.stocks[0]]: data };
+  return data;
+}
+
+async function refreshAll(){
+  const dot = document.getElementById('statusDot');
+  let cryptoOk = false, stockOk = true;
+
+  try{
+    const crypto = await fetchCrypto();
+    applyCrypto(crypto);
+    cryptoOk = true;
+  }catch(e){
+    console.error('crypto fetch failed:', e.message || e);
+  }
+
+  try{
+    const stocks = await fetchStocks();
+    applyStocks(stocks);
+  }catch(e){
+    stockOk = false;
+    console.error('stock fetch failed:', e.message || e);
+  }
+
+  if(cryptoOk){
+    dot.className = 'dot live';
+    hideBanner();
+  }else{
+    dot.className = 'dot err';
+    showBanner('Price data blocked or unreachable. If you\'re viewing this inside Claude\'s preview, open the saved file in Safari (or Add to Home Screen) — the in-app preview restricts network access.');
+  }
+
+  document.getElementById('lastUpdated').textContent =
+    'Updated ' + new Date().toLocaleTimeString('en-AU',{hour12:false});
+
+  renderCycleTile();
+}
+
+function applyCrypto(data){
+  const vs = settings.currency;
+  const btc = data.bitcoin;
+  document.getElementById('heroLabel').textContent = 'BTC / ' + vs.toUpperCase();
+  if(btc && btc[vs] !== undefined){
+    renderFlip(document.getElementById('heroPrice'), fmtMoney(btc[vs], vs));
+    const chg = btc[vs+'_24h_change'];
+    const el = document.getElementById('heroChange');
+    if(chg !== undefined){
+      el.textContent = (chg>=0?'▲ ':'▼ ') + Math.abs(chg).toFixed(2) + '%';
+      el.className = 'hero-change ' + (chg>=0?'up':'down');
+    }
+    document.getElementById('heroSub').textContent = '24h change';
+  }
+
+  settings.cryptoExtra.forEach(id=>{
+    const d = data[id];
+    const key = 'crypto-' + id;
+    if(d && d[vs] !== undefined){
+      latestData[key] = {
+        price: d[vs],
+        priceText: fmtMoney(d[vs], vs),
+        change: d[vs+'_24h_change']
+      };
+    }else{
+      latestData[key] = null;
+    }
+  });
+}
+
+function applyStocks(data){
+  settings.stocks.forEach(sym=>{
+    const d = data[sym];
+    const key = 'stock-' + sym;
+    if(d && d.close && !d.status){
+      const price = parseFloat(d.close);
+      latestData[key] = {
+        price: price,
+        priceText: '$' + price.toLocaleString('en-AU',{minimumFractionDigits:2,maximumFractionDigits:2}),
+        change: parseFloat(d.percent_change)
+      };
+    }else{
+      latestData[key] = null;
+    }
+  });
+}
+
+// ---------- timers ----------
+function restartPriceTimer(){
+  if(priceTimer) clearInterval(priceTimer);
+  priceTimer = setInterval(refreshAll, settings.interval * 1000);
+}
+
+let sparkTimer = null;
+function restartSparkTimer(){
+  if(sparkTimer) clearInterval(sparkTimer);
+  sparkTimer = setInterval(fetchSparkline, 5 * 60 * 1000); // every 5 min regardless of price refresh rate
+}
+
+// ---------- wake lock (keeps iPad screen on while page is open) ----------
+let wakeLock = null;
+async function requestWakeLock(){
+  try{
+    if('wakeLock' in navigator){
+      wakeLock = await navigator.wakeLock.request('screen');
+    }
+  }catch(e){ /* not supported / denied — fine, user can lock via Settings > Auto-Lock */ }
+}
+document.addEventListener('visibilitychange', ()=>{
+  if(document.visibilityState === 'visible') requestWakeLock();
+});
+requestWakeLock();
+
+// ---------- init ----------
+(async function init(){
+  loadSettings();
+  buildCycleItems();
+  restartPriceTimer();
+  restartCycleTimer();
+  restartSparkTimer();
+  refreshAll();
+  fetchSparkline();
+})();
+</script>
+</body>
+</html>
