@@ -83,7 +83,7 @@
     border-radius:0;
     padding:0;
     flex-shrink:0;
-    font-size:clamp(28px,7vw,92px);
+    font-size:clamp(26px,6vw,60px);
     line-height:1;
     white-space:nowrap;
     max-width:100%;
@@ -91,7 +91,7 @@
   }
   .hero-price{
     font-family:'DM Mono',monospace;
-    font-size:clamp(34px,10vw,92px);
+    font-size:clamp(30px,7vw,64px);
     font-weight:500;
     line-height:1;
     color:var(--ink);
@@ -107,16 +107,17 @@
   .hero-change.up{ color:var(--up); background:rgba(111,169,122,.12); }
   .hero-change.down{ color:var(--down); background:rgba(193,85,74,.12); }
   .hero-sub{ margin-top:10px; font-size:13px; color:var(--ink-dim); font-family:'DM Mono',monospace; }
-  .spark-wrap{ margin-top:18px; height:70px; transition:height .3s; }
+  .spark-wrap{ margin-top:16px; height:clamp(48px,13vh,90px); transition:height .3s; flex-shrink:0; }
   .spark-wrap svg{ width:100%; height:100%; overflow:visible; }
   .spark-label{ font-family:'DM Mono',monospace; font-size:11px; color:var(--ink-dim); letter-spacing:.1em; margin-top:6px; }
 
   /* ---------- solo mode: no secondary tickers, BTC takes the whole screen ---------- */
   #app.solo-mode .hero{ flex:1; display:flex; flex-direction:column; justify-content:center; }
-  #app.solo-mode .hero-price{ font-size:clamp(70px,20vw,240px); }
-  #app.solo-mode .ticker-badge{ font-size:clamp(60px,20vw,240px); }
-  #app.solo-mode .hero-change{ font-size:clamp(22px,2.6vw,34px); }
-  #app.solo-mode .spark-wrap{ height:min(28vh,220px); margin-top:36px; }
+  #app.solo-mode .hero{ min-height:0; }
+  #app.solo-mode .hero-price{ font-size:clamp(44px,11vw,120px); }
+  #app.solo-mode .ticker-badge{ font-size:clamp(40px,11vw,120px); }
+  #app.solo-mode .hero-change{ font-size:clamp(18px,2.4vw,28px); }
+  #app.solo-mode .spark-wrap{ height:clamp(60px,20vh,150px); margin-top:28px; }
 
   /* ---------- cycle tile ---------- */
   .cycle{ flex:1; background:var(--panel); border:1px solid var(--line); border-radius:14px; display:flex; flex-direction:column; overflow:hidden; }
@@ -164,7 +165,7 @@
     background:#000;
     border-radius:2px;
   }
-  #app.matrix-mode .hero::before{ display:none; }
+  #app.matrix-mode .hero::before{ content:none; }
   #app.matrix-mode::after{
     content:"";
     position:fixed;
@@ -299,12 +300,20 @@
   <div class="field">
     <label>Refresh interval (price data)</label>
     <select id="intervalSelect">
+      <option value="3">Every 3 seconds (needs CoinGecko key below)</option>
       <option value="5">Every 5 seconds</option>
       <option value="10">Every 10 seconds</option>
       <option value="30">Every 30 seconds</option>
       <option value="60">Every 60 seconds</option>
       <option value="300">Every 5 minutes</option>
     </select>
+    <div class="hint">CoinGecko's free unauthenticated tier only allows 5–15 calls/min — fine for 5s or 10s, but 3s will get occasional rate-limit errors unless you add a free key below.</div>
+  </div>
+
+  <div class="field">
+    <label>CoinGecko Demo API key (optional — for faster refresh)</label>
+    <input type="password" id="cgKeyInput" placeholder="paste key here">
+    <div class="hint">Free, no cost, just a signup at <a href="https://www.coingecko.com/en/api/pricing" target="_blank">coingecko.com/api/pricing</a> → Demo plan. Raises your limit to a stable 30 calls/min, which safely supports the 3 second option.</div>
   </div>
 
   <div class="field">
@@ -378,6 +387,7 @@ const DEFAULTS = {
   sleepStart: '21:30',
   sleepEnd: '05:30',
   apiKey: '',
+  cgApiKey: '',
   cryptoExtra: [],
   stocks: []
 };
@@ -446,6 +456,7 @@ function hydrateDrawer(){
   document.getElementById('intervalSelect').value = String(settings.interval);
   document.getElementById('cycleSelect').value = String(settings.cycleSeconds);
   document.getElementById('apiKeyInput').value = settings.apiKey;
+  document.getElementById('cgKeyInput').value = settings.cgApiKey;
   document.getElementById('sleepEnabled').checked = settings.sleepEnabled;
   document.getElementById('sleepStart').value = settings.sleepStart;
   document.getElementById('sleepEnd').value = settings.sleepEnd;
@@ -506,6 +517,7 @@ function closeDrawer(){
   settings.interval = parseInt(document.getElementById('intervalSelect').value,10);
   settings.cycleSeconds = parseInt(document.getElementById('cycleSelect').value,10);
   settings.apiKey = document.getElementById('apiKeyInput').value.trim();
+  settings.cgApiKey = document.getElementById('cgKeyInput').value.trim();
   settings.sleepEnabled = document.getElementById('sleepEnabled').checked;
   settings.sleepStart = document.getElementById('sleepStart').value || DEFAULTS.sleepStart;
   settings.sleepEnd = document.getElementById('sleepEnd').value || DEFAULTS.sleepEnd;
@@ -564,14 +576,29 @@ function isSleepNow(){
 }
 
 let peekTimer = null;
+let wasAsleep = false;
 function updateSleepState(){
   const app = document.getElementById('app');
   const asleep = isSleepNow();
-  if(!asleep){
-    app.classList.remove('sleep-mode','peek');
-    return;
+  app.classList.toggle('sleep-mode', asleep);
+
+  if(asleep === wasAsleep) return;
+  wasAsleep = asleep;
+
+  if(asleep){
+    // stop all network polling overnight — saves API quota and battery
+    if(priceTimer) clearInterval(priceTimer);
+    if(sparkTimer) clearInterval(sparkTimer);
+    if(cycleTimer) clearInterval(cycleTimer);
+  }else{
+    // waking up — refresh immediately, then resume normal polling
+    restartPriceTimer();
+    restartCycleTimer();
+    restartSparkTimer();
+    refreshAll();
+    fetchSparkline();
+    app.classList.remove('peek');
   }
-  app.classList.add('sleep-mode');
 }
 function peek(){
   const app = document.getElementById('app');
@@ -755,7 +782,8 @@ const RANGE_LABEL = { '1':'24H', '7':'7D', '30':'30D', '365':'1Y' };
 
 async function fetchSparkline(){
   try{
-    const url = `https://api.coingecko.com/api/v3/coins/bitcoin/market_chart?vs_currency=${settings.currency}&days=${settings.chartRange}`;
+    let url = `https://api.coingecko.com/api/v3/coins/bitcoin/market_chart?vs_currency=${settings.currency}&days=${settings.chartRange}`;
+    if(settings.cgApiKey) url += `&x_cg_demo_api_key=${settings.cgApiKey}`;
     const res = await fetch(url);
     if(!res.ok) throw new Error('sparkline ' + res.status);
     const data = await res.json();
@@ -808,9 +836,10 @@ function drawSparkline(points){
 async function fetchCrypto(){
   const ids = ['bitcoin', ...settings.cryptoExtra];
   const vs = settings.currency;
-  const url = `https://api.coingecko.com/api/v3/simple/price?ids=${ids.join(',')}&vs_currencies=${vs}&include_24hr_change=true`;
+  let url = `https://api.coingecko.com/api/v3/simple/price?ids=${ids.join(',')}&vs_currencies=${vs}&include_24hr_change=true`;
+  if(settings.cgApiKey) url += `&x_cg_demo_api_key=${settings.cgApiKey}`;
   const res = await fetch(url);
-  if(!res.ok) throw new Error('coingecko ' + res.status);
+  if(!res.ok) throw new Error((res.status === 429 ? 'rate-limited ' : 'coingecko ') + res.status);
   return res.json();
 }
 
@@ -849,7 +878,7 @@ async function refreshAll(){
     hideBanner();
   }else{
     dot.className = 'dot err';
-    showBanner('Price data blocked or unreachable. If you\'re viewing this inside Claude\'s preview, open the hosted URL in Safari instead — the in-app preview restricts network access.');
+    showBanner('Rate limited by CoinGecko\'s free tier — try a slower refresh interval, or add a free CoinGecko Demo API key in settings. Last known price stays on screen until the next successful update.');
   }
 
   document.getElementById('lastUpdated').textContent =
