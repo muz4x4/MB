@@ -8,7 +8,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <title>Market Board</title>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Space+Grotesk:wght@400;500;600;700&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Space+Grotesk:wght@400;500;600;700&family=Silkscreen:wght@400;700&display=swap');
 
   :root{
     --bg: #14110F;
@@ -32,6 +32,7 @@
     overflow:hidden;
     font-family:'Space Grotesk',sans-serif;
     -webkit-user-select:none; user-select:none;
+    transition:background .3s;
   }
 
   #app{
@@ -44,80 +45,20 @@
   }
 
   /* ---------- header ---------- */
-  header{
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
-  }
-  .brand{
-    display:flex;
-    align-items:baseline;
-    gap:10px;
-  }
-  .brand .mark{
-    font-family:'DM Mono',monospace;
-    color:var(--amber);
-    font-size:14px;
-    letter-spacing:.18em;
-  }
-  .brand h1{
-    font-size:15px;
-    letter-spacing:.28em;
-    font-weight:600;
-    color:var(--ink-dim);
-    text-transform:uppercase;
-  }
-  .clock{
-    font-family:'DM Mono',monospace;
-    font-size:14px;
-    color:var(--ink-dim);
-    letter-spacing:.05em;
-    display:flex;
-    align-items:center;
-    gap:14px;
-  }
-  .dot{
-    width:7px;height:7px;border-radius:50%;
-    background:var(--ink-dim);
-    transition:background .3s;
-  }
+  header{ display:flex; justify-content:space-between; align-items:center; }
+  .brand{ display:flex; align-items:baseline; gap:10px; }
+  .brand .mark{ font-family:'DM Mono',monospace; color:var(--amber); font-size:14px; letter-spacing:.18em; }
+  .brand h1{ font-size:15px; letter-spacing:.28em; font-weight:600; color:var(--ink-dim); text-transform:uppercase; }
+  .clock{ font-family:'DM Mono',monospace; font-size:14px; color:var(--ink-dim); letter-spacing:.05em; display:flex; align-items:center; gap:14px; }
+  .dot{ width:7px;height:7px;border-radius:50%; background:var(--ink-dim); transition:background .3s; }
   .dot.live{ background:var(--up); box-shadow:0 0 8px var(--up); }
   .dot.err{ background:var(--down); box-shadow:0 0 8px var(--down); }
-  .gear{
-    width:34px;height:34px;
-    border-radius:50%;
-    border:1px solid var(--line);
-    display:flex;align-items:center;justify-content:center;
-    color:var(--ink-dim);
-    cursor:pointer;
-    font-size:16px;
-  }
+  .gear{ width:34px;height:34px; border-radius:50%; border:1px solid var(--line); display:flex;align-items:center;justify-content:center; color:var(--ink-dim); cursor:pointer; font-size:16px; }
 
   /* ---------- status banner ---------- */
-  .banner{
-    display:none;
-    align-items:center;
-    justify-content:space-between;
-    gap:14px;
-    background:rgba(193,85,74,.10);
-    border:1px solid rgba(193,85,74,.35);
-    color:var(--down);
-    border-radius:10px;
-    padding:10px 16px;
-    font-size:13px;
-    line-height:1.5;
-    flex-shrink:0;
-  }
+  .banner{ display:none; align-items:center; justify-content:space-between; gap:14px; background:rgba(193,85,74,.10); border:1px solid rgba(193,85,74,.35); color:var(--down); border-radius:10px; padding:10px 16px; font-size:13px; line-height:1.5; flex-shrink:0; }
   .banner.show{ display:flex; }
-  .banner button{
-    background:transparent;
-    border:1px solid var(--down);
-    color:var(--down);
-    padding:6px 12px;
-    font-size:12px;
-    border-radius:6px;
-    flex-shrink:0;
-  }
+  .banner button{ background:transparent; border:1px solid var(--down); color:var(--down); padding:6px 12px; font-size:12px; border-radius:6px; flex-shrink:0; }
 
   /* ---------- hero (BTC) ---------- */
   .hero{
@@ -128,23 +69,24 @@
     position:relative;
     overflow:hidden;
     flex-shrink:0;
+    transition:flex .3s;
   }
-  .hero::before{
-    content:"";
-    position:absolute; left:0; top:0; bottom:0; width:4px;
-    background:var(--amber);
-  }
-  .hero-top{
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
-  }
-  .hero-label{
-    font-size:13px;
-    letter-spacing:.24em;
-    color:var(--ink-dim);
-    text-transform:uppercase;
-    margin-bottom:10px;
+  .hero::before{ content:""; position:absolute; left:0; top:0; bottom:0; width:4px; background:var(--amber); }
+  .hero-top{ display:flex; justify-content:space-between; align-items:center; }
+  .hero-label{ font-size:13px; letter-spacing:.24em; color:var(--ink-dim); text-transform:uppercase; margin-bottom:10px; }
+  .price-line{ display:flex; flex-direction:column; align-items:flex-start; gap:2px; }
+  .ticker-badge{
+    font-family:'DM Mono',monospace;
+    font-weight:700;
+    letter-spacing:.04em;
+    color:var(--amber);
+    background:none;
+    border-radius:0;
+    padding:0;
+    flex-shrink:0;
+    font-size:clamp(48px,8vw,92px);
+    line-height:1;
+    transition:font-size .3s, font-family .3s;
   }
   .hero-price{
     font-family:'DM Mono',monospace;
@@ -153,236 +95,112 @@
     line-height:1;
     color:var(--ink);
     letter-spacing:-.01em;
+    transition:font-size .3s;
   }
-  .flipchar{
-    display:inline-block;
-    transition:transform .22s ease, opacity .22s ease;
-    transform-origin:50% 60%;
-  }
+  .flipchar{ display:inline-block; transition:transform .22s ease, opacity .22s ease; transform-origin:50% 60%; }
   .flipchar.flip{ transform:rotateX(90deg); opacity:0; }
-  .hero-right{
-    text-align:right;
-  }
-  .hero-change{
-    font-family:'DM Mono',monospace;
-    font-size:20px;
-    padding:6px 14px;
-    border-radius:8px;
-    display:inline-block;
-  }
+  .hero-right{ text-align:right; }
+  .hero-change{ font-family:'DM Mono',monospace; font-size:20px; padding:6px 14px; border-radius:8px; display:inline-block; }
   .hero-change.up{ color:var(--up); background:rgba(111,169,122,.12); }
   .hero-change.down{ color:var(--down); background:rgba(193,85,74,.12); }
-  .hero-sub{
-    margin-top:10px;
-    font-size:13px;
-    color:var(--ink-dim);
-    font-family:'DM Mono',monospace;
-  }
-  .spark-wrap{
-    margin-top:18px;
-    height:70px;
-  }
+  .hero-sub{ margin-top:10px; font-size:13px; color:var(--ink-dim); font-family:'DM Mono',monospace; }
+  .spark-wrap{ margin-top:18px; height:70px; transition:height .3s; }
   .spark-wrap svg{ width:100%; height:100%; overflow:visible; }
-  .spark-label{
-    font-family:'DM Mono',monospace;
-    font-size:11px;
-    color:var(--ink-dim);
-    letter-spacing:.1em;
-    margin-top:6px;
-  }
+  .spark-label{ font-family:'DM Mono',monospace; font-size:11px; color:var(--ink-dim); letter-spacing:.1em; margin-top:6px; }
+
+  /* ---------- solo mode: no secondary tickers, BTC takes the whole screen ---------- */
+  #app.solo-mode .hero{ flex:1; display:flex; flex-direction:column; justify-content:center; }
+  #app.solo-mode .hero-price{ font-size:clamp(90px,18vw,240px); }
+  #app.solo-mode .ticker-badge{ font-size:clamp(90px,18vw,240px); }
+  #app.solo-mode .hero-change{ font-size:clamp(22px,2.6vw,34px); }
+  #app.solo-mode .spark-wrap{ height:min(28vh,220px); margin-top:36px; }
 
   /* ---------- cycle tile ---------- */
-  .cycle{
-    flex:1;
-    background:var(--panel);
-    border:1px solid var(--line);
-    border-radius:14px;
-    display:flex;
-    flex-direction:column;
-    overflow:hidden;
-  }
-  .cycle-empty{
-    flex:1;
-    display:flex; align-items:center; justify-content:center;
-    color:var(--ink-dim);
-    font-size:14px;
-    text-align:center;
-    padding:20px;
-    line-height:1.6;
-  }
-  .cycle-body{
-    flex:1;
-    display:flex;
-    flex-direction:column;
-    justify-content:center;
-    padding:20px 34px;
-    cursor:pointer;
-  }
-  .cycle-top{
-    display:flex;
-    align-items:center;
-    gap:10px;
-    margin-bottom:14px;
-  }
-  .cycle-sym{
-    font-family:'DM Mono',monospace;
-    font-size:20px;
-    letter-spacing:.1em;
-    color:var(--ink);
-  }
-  .cycle-kind{
-    font-size:10px;
-    letter-spacing:.14em;
-    color:var(--amber-dim);
-    background:rgba(232,163,61,.08);
-    border:1px solid var(--amber-dim);
-    border-radius:4px;
-    padding:2px 6px;
-    text-transform:uppercase;
-  }
-  .cycle-row{
-    display:flex;
-    align-items:baseline;
-    justify-content:space-between;
-    gap:20px;
-  }
-  .cycle-price{
-    font-family:'DM Mono',monospace;
-    font-size:clamp(34px,5.5vw,58px);
-  }
-  .cycle-chg{
-    font-family:'DM Mono',monospace;
-    font-size:18px;
-    padding:5px 12px;
-    border-radius:8px;
-  }
+  .cycle{ flex:1; background:var(--panel); border:1px solid var(--line); border-radius:14px; display:flex; flex-direction:column; overflow:hidden; }
+  .cycle-empty{ flex:1; display:flex; align-items:center; justify-content:center; color:var(--ink-dim); font-size:14px; text-align:center; padding:20px; line-height:1.6; }
+  .cycle-body{ flex:1; display:flex; flex-direction:column; justify-content:center; padding:20px 34px; cursor:pointer; }
+  .cycle-top{ display:flex; align-items:center; gap:10px; margin-bottom:14px; }
+  .cycle-sym{ font-family:'DM Mono',monospace; font-size:20px; letter-spacing:.1em; color:var(--ink); }
+  .cycle-kind{ font-size:10px; letter-spacing:.14em; color:var(--amber-dim); background:rgba(232,163,61,.08); border:1px solid var(--amber-dim); border-radius:4px; padding:2px 6px; text-transform:uppercase; }
+  .cycle-row{ display:flex; align-items:baseline; justify-content:space-between; gap:20px; }
+  .cycle-price{ font-family:'DM Mono',monospace; font-size:clamp(34px,5.5vw,58px); }
+  .cycle-chg{ font-family:'DM Mono',monospace; font-size:18px; padding:5px 12px; border-radius:8px; }
   .cycle-chg.up{ color:var(--up); background:rgba(111,169,122,.12); }
   .cycle-chg.down{ color:var(--down); background:rgba(193,85,74,.12); }
   .cycle-stale{ opacity:.4; font-size:14px; font-family:'DM Mono',monospace; margin-top:6px; }
-  .dots{
-    display:flex;
-    gap:6px;
-    padding:14px 34px 18px;
-  }
-  .dots .d{
-    width:6px;height:6px;border-radius:50%;
-    background:var(--line);
-    transition:background .3s;
-  }
+  .dots{ display:flex; gap:6px; padding:14px 34px 18px; }
+  .dots .d{ width:6px;height:6px;border-radius:50%; background:var(--line); transition:background .3s; }
   .dots .d.active{ background:var(--amber); }
 
-  footer{
-    display:flex;
-    justify-content:space-between;
-    font-family:'DM Mono',monospace;
-    font-size:11px;
-    color:var(--ink-dim);
-    letter-spacing:.06em;
-    flex-shrink:0;
+  footer{ display:flex; justify-content:space-between; font-family:'DM Mono',monospace; font-size:11px; color:var(--ink-dim); letter-spacing:.06em; flex-shrink:0; }
+
+  /* ---------- overnight screen-off ---------- */
+  #app{ background:transparent; }
+  #app.sleep-mode:not(.peek){ background:#000; }
+  #app.sleep-mode:not(.peek) > *{ visibility:hidden; }
+
+  /* ---------- LED matrix display mode ---------- */
+  #app.matrix-mode{
+    border:16px solid;
+    border-image:linear-gradient(135deg,#9a9a9a,#4a4a4a 40%,#2a2a2a 60%,#9a9a9a) 1;
+    box-shadow:inset 0 0 40px rgba(0,0,0,.7);
+  }
+  #app.matrix-mode .ticker-badge,
+  #app.matrix-mode .hero-price,
+  #app.matrix-mode .hero-change,
+  #app.matrix-mode .cycle-price,
+  #app.matrix-mode .cycle-sym,
+  #app.matrix-mode .cycle-chg,
+  #app.matrix-mode .clock{
+    font-family:'Silkscreen',monospace;
+    letter-spacing:.02em;
+  }
+  #app.matrix-mode .hero,
+  #app.matrix-mode .cycle{
+    border:none;
+    background:#000;
+    border-radius:2px;
+  }
+  #app.matrix-mode .hero::before{ display:none; }
+  #app.matrix-mode::after{
+    content:"";
+    position:fixed;
+    inset:0;
+    pointer-events:none;
+    z-index:5;
+    background-image:radial-gradient(circle, rgba(0,0,0,.6) 1px, transparent 1.6px);
+    background-size:5px 5px;
+    mix-blend-mode:multiply;
   }
 
   /* ---------- settings drawer ---------- */
-  .backdrop{
-    position:fixed; inset:0;
-    background:rgba(0,0,0,.55);
-    opacity:0; pointer-events:none;
-    transition:opacity .25s;
-    z-index:10;
-  }
+  .backdrop{ position:fixed; inset:0; background:rgba(0,0,0,.55); opacity:0; pointer-events:none; transition:opacity .25s; z-index:10; }
   .backdrop.open{ opacity:1; pointer-events:auto; }
-  .drawer{
-    position:fixed; right:0; top:0; bottom:0;
-    width:min(420px,92vw);
-    background:var(--panel);
-    border-left:1px solid var(--line);
-    transform:translateX(100%);
-    transition:transform .3s ease;
-    z-index:11;
-    padding:28px 26px;
-    overflow-y:auto;
-  }
+  .drawer{ position:fixed; right:0; top:0; bottom:0; width:min(420px,92vw); background:var(--panel); border-left:1px solid var(--line); transform:translateX(100%); transition:transform .3s ease; z-index:11; padding:28px 26px; overflow-y:auto; }
   .drawer.open{ transform:translateX(0); }
-  .drawer h2{
-    font-size:13px;
-    letter-spacing:.2em;
-    text-transform:uppercase;
-    color:var(--ink-dim);
-    margin-bottom:20px;
-  }
+  .drawer h2{ font-size:13px; letter-spacing:.2em; text-transform:uppercase; color:var(--ink-dim); margin-bottom:20px; }
   .field{ margin-bottom:22px; }
-  .field label{
-    display:block;
-    font-size:12px;
-    color:var(--ink-dim);
-    margin-bottom:8px;
-    letter-spacing:.05em;
-  }
-  .field .hint{
-    font-size:11px;
-    color:var(--ink-dim);
-    margin-top:6px;
-    line-height:1.5;
-  }
+  .field label{ display:block; font-size:12px; color:var(--ink-dim); margin-bottom:8px; letter-spacing:.05em; }
+  .field .hint{ font-size:11px; color:var(--ink-dim); margin-top:6px; line-height:1.5; }
   .field .hint a{ color:var(--amber); }
   input[type=text],input[type=password],select{
-    width:100%;
-    background:var(--bg);
-    border:1px solid var(--line);
-    border-radius:8px;
-    color:var(--ink);
-    font-family:'DM Mono',monospace;
-    font-size:14px;
-    padding:10px 12px;
+    width:100%; background:var(--bg); border:1px solid var(--line); border-radius:8px; color:var(--ink);
+    font-family:'DM Mono',monospace; font-size:14px; padding:10px 12px;
   }
   .row-add{ display:flex; gap:8px; }
   .row-add input{ flex:1; }
-  button{
-    font-family:'Space Grotesk',sans-serif;
-    font-weight:600;
-    border:none;
-    border-radius:8px;
-    cursor:pointer;
-  }
-  .btn-amber{
-    background:var(--amber);
-    color:#1a1410;
-    padding:10px 16px;
-    font-size:13px;
-  }
-  .btn-ghost{
-    background:transparent;
-    border:1px solid var(--line);
-    color:var(--ink-dim);
-    width:100%;
-    padding:12px;
-    font-size:13px;
-    margin-top:8px;
-  }
+  button{ font-family:'Space Grotesk',sans-serif; font-weight:600; border:none; border-radius:8px; cursor:pointer; }
+  .btn-amber{ background:var(--amber); color:#1a1410; padding:10px 16px; font-size:13px; }
+  .btn-ghost{ background:transparent; border:1px solid var(--line); color:var(--ink-dim); width:100%; padding:12px; font-size:13px; margin-top:8px; }
   .chips{ display:flex; flex-wrap:wrap; gap:8px; margin-top:10px; }
-  .chip{
-    display:flex; align-items:center; gap:8px;
-    background:var(--bg);
-    border:1px solid var(--line);
-    border-radius:20px;
-    padding:6px 6px 6px 12px;
-    font-family:'DM Mono',monospace;
-    font-size:13px;
-  }
-  .chip .x{
-    width:18px;height:18px;
-    border-radius:50%;
-    background:var(--line);
-    display:flex;align-items:center;justify-content:center;
-    font-size:11px;
-    cursor:pointer;
-    color:var(--ink);
-  }
-  .save-note{
-    font-size:12px;
-    color:var(--up);
-    height:16px;
-    margin-top:10px;
-  }
+  .chip{ display:flex; align-items:center; gap:8px; background:var(--bg); border:1px solid var(--line); border-radius:20px; padding:6px 6px 6px 12px; font-family:'DM Mono',monospace; font-size:13px; }
+  .chip .x{ width:18px;height:18px; border-radius:50%; background:var(--line); display:flex;align-items:center;justify-content:center; font-size:11px; cursor:pointer; color:var(--ink); }
+  .save-note{ font-size:12px; color:var(--up); height:16px; margin-top:10px; }
+
+  /* theme swatch preview in dropdown */
+  .theme-preview{ display:flex; gap:8px; margin-top:10px; }
+  .swatch{ flex:1; height:34px; border-radius:8px; border:2px solid transparent; cursor:pointer; display:flex; align-items:center; justify-content:center; font-family:'DM Mono',monospace; font-size:10px; letter-spacing:.05em; }
+  .swatch.active{ border-color:var(--amber); }
 </style>
 </head>
 <body>
@@ -409,7 +227,10 @@
     <div class="hero-top">
       <div>
         <div class="hero-label" id="heroLabel">BTC / USD</div>
-        <div class="hero-price" id="heroPrice">— — — — —</div>
+        <div class="price-line">
+          <span class="ticker-badge">BTC</span>
+          <div class="hero-price" id="heroPrice">— — — — —</div>
+        </div>
       </div>
       <div class="hero-right">
         <div class="hero-change" id="heroChange">—</div>
@@ -435,10 +256,40 @@
   <h2>Configure Board</h2>
 
   <div class="field">
+    <label>Colour palette</label>
+    <select id="themeSelect">
+      <option value="mono">Mono — black & white</option>
+      <option value="slate">Slate — muted blue</option>
+      <option value="amber">Amber — warm board (default)</option>
+      <option value="terminal">Terminal — phosphor green</option>
+      <option value="vivid">Vivid — very colourful</option>
+      <option value="led">LED Board — bold red/green/blue/yellow</option>
+    </select>
+  </div>
+
+  <div class="field">
+    <div class="row-add" style="align-items:center;">
+      <input type="checkbox" id="matrixMode" style="width:20px;height:20px;flex:0 0 auto;accent-color:var(--amber);">
+      <span style="font-size:13px;color:var(--ink-dim);">LED matrix look (pixel font + dot grid + metal bezel)</span>
+    </div>
+    <div class="hint">Pairs best with the LED Board palette above — recreates the physical dot-matrix ticker look on screen.</div>
+  </div>
+
+  <div class="field">
     <label>Display currency</label>
     <select id="currencySelect">
       <option value="usd">USD</option>
       <option value="aud">AUD</option>
+    </select>
+  </div>
+
+  <div class="field">
+    <label>Graph timeframe</label>
+    <select id="rangeSelect">
+      <option value="1">24 Hours</option>
+      <option value="7">7 Days</option>
+      <option value="30">30 Days</option>
+      <option value="365">1 Year</option>
     </select>
   </div>
 
@@ -484,6 +335,27 @@
     <div class="chips" id="stockChips"></div>
   </div>
 
+  <div class="field">
+    <label>Overnight screen-off</label>
+    <div class="row-add" style="align-items:center;">
+      <input type="checkbox" id="sleepEnabled" style="width:20px;height:20px;flex:0 0 auto;accent-color:var(--amber);">
+      <span style="font-size:13px;color:var(--ink-dim);">Enable scheduled screen-off</span>
+    </div>
+    <div class="row-add" style="margin-top:12px;">
+      <div style="flex:1;">
+        <div class="hint" style="margin-bottom:4px;">Off at</div>
+        <input type="time" id="sleepStart">
+      </div>
+      <div style="flex:1;">
+        <div class="hint" style="margin-bottom:4px;">On at</div>
+        <input type="time" id="sleepEnd">
+      </div>
+    </div>
+    <div class="hint">Handles overnight ranges fine (e.g. 21:30 → 05:30). Tap anywhere on the black screen to peek for 8 seconds. Note: this blacks out the page content but can't dim the iPad's actual backlight — the screen will still emit some light, just no numbers or motion.</div>
+  </div>
+
+  <div class="hint" style="margin-bottom:14px;">Leave both crypto and stocks empty and BTC will take up the whole screen.</div>
+
   <button class="btn-ghost" id="closeDrawer">Close & refresh</button>
   <div class="save-note" id="saveNote"></div>
 </div>
@@ -494,32 +366,61 @@ const DEFAULTS = {
   currency: 'usd',
   interval: 60,
   cycleSeconds: 6,
+  chartRange: '1',
+  theme: 'amber',
+  matrixMode: false,
+  sleepEnabled: false,
+  sleepStart: '21:30',
+  sleepEnd: '05:30',
   apiKey: '',
-  cryptoExtra: [],   // besides bitcoin, which is always the hero
+  cryptoExtra: [],
   stocks: []
 };
 
+const THEMES = {
+  mono:    { bg:'#0F0F0F', panel:'#1A1A1A', panel2:'#1E1E1E', line:'#333333', ink:'#F4F4F4', inkDim:'#8C8C8C', amber:'#F4F4F4', amberDim:'#5C5C5C', up:'#F4F4F4', down:'#7A7A7A' },
+  slate:   { bg:'#12151A', panel:'#1B2029', panel2:'#1F2530', line:'#2E3642', ink:'#E7ECF2', inkDim:'#8791A0', amber:'#6FA8DC', amberDim:'#3E5A73', up:'#6FA97A', down:'#C1554A' },
+  amber:   { bg:'#14110F', panel:'#1C1815', panel2:'#211C18', line:'#35302A', ink:'#EDE6DA', inkDim:'#9C948A', amber:'#E8A33D', amberDim:'#7A5A28', up:'#6FA97A', down:'#C1554A' },
+  terminal:{ bg:'#0B120C', panel:'#101B12', panel2:'#132015', line:'#24361F', ink:'#CFEFC8', inkDim:'#6E9468', amber:'#3DDC6B', amberDim:'#1F7A3E', up:'#3DDC6B', down:'#E85C5C' },
+  vivid:   { bg:'#15121F', panel:'#1E1A2E', panel2:'#241F38', line:'#3A3355', ink:'#F5EFFF', inkDim:'#9C90C0', amber:'#FF3EA5', amberDim:'#8C2568', up:'#00E0C0', down:'#FF6B35' },
+  led:     { bg:'#000000', panel:'#050505', panel2:'#0A0A0A', line:'#1A1A1A', ink:'#FFD400', inkDim:'#5A5A5A', amber:'#2DA6FF', amberDim:'#154D80', up:'#39FF14', down:'#FF1E3C' }
+};
+
+function applyTheme(name){
+  const t = THEMES[name] || THEMES.amber;
+  const root = document.documentElement.style;
+  root.setProperty('--bg', t.bg);
+  root.setProperty('--panel', t.panel);
+  root.setProperty('--panel-2', t.panel2);
+  root.setProperty('--line', t.line);
+  root.setProperty('--ink', t.ink);
+  root.setProperty('--ink-dim', t.inkDim);
+  root.setProperty('--amber', t.amber);
+  root.setProperty('--amber-dim', t.amberDim);
+  root.setProperty('--up', t.up);
+  root.setProperty('--down', t.down);
+  drawSparkline(lastSparkPoints); // redraw with new theme colours
+}
+
 let settings = { ...DEFAULTS };
-let lastValues = {};      // dom-id -> last displayed price string, for flip diffing
-let latestData = {};      // 'crypto-eth' / 'stock-TSLA' -> {price, change, currency}
+let lastValues = {};
+let latestData = {};
 let priceTimer = null;
 let cycleTimer = null;
+let sparkTimer = null;
 let cycleItems = [];
 let cycleIndex = 0;
+let lastSparkPoints = [];
 
-// ---------- storage ----------
-// Uses the browser's own localStorage, scoped to this page's URL.
-// Settings persist on this device/browser only — no account, no sync.
+// ---------- storage (standard browser localStorage — works once hosted, not in Claude's own preview) ----------
 function loadSettings(){
   try{
     const raw = localStorage.getItem(STORAGE_KEY);
-    if(raw){
-      settings = { ...DEFAULTS, ...JSON.parse(raw) };
-    }
-  }catch(e){
-    console.error('load failed', e); // no saved settings yet, or storage unavailable
-  }
+    if(raw){ settings = { ...DEFAULTS, ...JSON.parse(raw) }; }
+  }catch(e){ console.error('load failed', e); }
   hydrateDrawer();
+  applyTheme(settings.theme);
+  document.getElementById('app').classList.toggle('matrix-mode', settings.matrixMode);
 }
 
 function saveSettings(){
@@ -528,17 +429,21 @@ function saveSettings(){
     const note = document.getElementById('saveNote');
     note.textContent = 'Saved';
     setTimeout(()=> note.textContent = '', 1500);
-  }catch(e){
-    console.error('save failed', e);
-  }
+  }catch(e){ console.error('save failed', e); }
 }
 
 // ---------- drawer wiring ----------
 function hydrateDrawer(){
+  document.getElementById('themeSelect').value = settings.theme;
+  document.getElementById('matrixMode').checked = settings.matrixMode;
   document.getElementById('currencySelect').value = settings.currency;
+  document.getElementById('rangeSelect').value = settings.chartRange;
   document.getElementById('intervalSelect').value = String(settings.interval);
   document.getElementById('cycleSelect').value = String(settings.cycleSeconds);
   document.getElementById('apiKeyInput').value = settings.apiKey;
+  document.getElementById('sleepEnabled').checked = settings.sleepEnabled;
+  document.getElementById('sleepStart').value = settings.sleepStart;
+  document.getElementById('sleepEnd').value = settings.sleepEnd;
   renderChips();
 }
 
@@ -578,18 +483,35 @@ document.getElementById('backdrop').onclick = closeDrawer;
 document.getElementById('closeDrawer').onclick = closeDrawer;
 document.getElementById('retryBtn').onclick = refreshAll;
 
+// live theme preview while drawer is open
+document.getElementById('themeSelect').onchange = (e)=> applyTheme(e.target.value);
+document.getElementById('matrixMode').onchange = (e)=>{
+  document.getElementById('app').classList.toggle('matrix-mode', e.target.checked);
+};
+
 function closeDrawer(){
   document.getElementById('backdrop').classList.remove('open');
   document.getElementById('drawer').classList.remove('open');
+  const rangeChanged = settings.chartRange !== document.getElementById('rangeSelect').value;
+
+  settings.theme = document.getElementById('themeSelect').value;
+  settings.matrixMode = document.getElementById('matrixMode').checked;
   settings.currency = document.getElementById('currencySelect').value;
+  settings.chartRange = document.getElementById('rangeSelect').value;
   settings.interval = parseInt(document.getElementById('intervalSelect').value,10);
   settings.cycleSeconds = parseInt(document.getElementById('cycleSelect').value,10);
   settings.apiKey = document.getElementById('apiKeyInput').value.trim();
+  settings.sleepEnabled = document.getElementById('sleepEnabled').checked;
+  settings.sleepStart = document.getElementById('sleepStart').value || DEFAULTS.sleepStart;
+  settings.sleepEnd = document.getElementById('sleepEnd').value || DEFAULTS.sleepEnd;
+
   saveSettings();
+  applyTheme(settings.theme);
   buildCycleItems();
   restartPriceTimer();
   restartCycleTimer();
   refreshAll();
+  if(rangeChanged) fetchSparkline();
 }
 
 document.getElementById('addCrypto').onclick = ()=>{
@@ -613,20 +535,56 @@ document.getElementById('addStock').onclick = ()=>{
 
 // ---------- clock ----------
 function tickClock(){
-  const now = new Date();
-  document.getElementById('clockText').textContent = now.toLocaleTimeString('en-AU',{hour12:false});
+  document.getElementById('clockText').textContent = new Date().toLocaleTimeString('en-AU',{hour12:false});
+  updateSleepState();
 }
 setInterval(tickClock, 1000);
 tickClock();
+
+// ---------- overnight screen-off ----------
+function timeToMinutes(str){
+  const [h,m] = str.split(':').map(Number);
+  return h*60 + m;
+}
+function isSleepNow(){
+  if(!settings.sleepEnabled) return false;
+  const now = new Date();
+  const nowMin = now.getHours()*60 + now.getMinutes();
+  const start = timeToMinutes(settings.sleepStart);
+  const end = timeToMinutes(settings.sleepEnd);
+  if(start === end) return false;
+  return start < end
+    ? (nowMin >= start && nowMin < end)      // same-day range
+    : (nowMin >= start || nowMin < end);     // wraps past midnight
+}
+
+let peekTimer = null;
+function updateSleepState(){
+  const app = document.getElementById('app');
+  const asleep = isSleepNow();
+  if(!asleep){
+    app.classList.remove('sleep-mode','peek');
+    return;
+  }
+  app.classList.add('sleep-mode');
+}
+function peek(){
+  const app = document.getElementById('app');
+  if(!app.classList.contains('sleep-mode')) return;
+  app.classList.add('peek');
+  clearTimeout(peekTimer);
+  peekTimer = setTimeout(()=>{ document.getElementById('app').classList.remove('peek'); }, 8000);
+}
+document.getElementById('app').addEventListener('click', ()=>{
+  if(document.getElementById('app').classList.contains('sleep-mode')) peek();
+});
 
 // ---------- status banner ----------
 function showBanner(msg){
   document.getElementById('bannerText').textContent = msg;
   document.getElementById('banner').classList.add('show');
 }
-function hideBanner(){
-  document.getElementById('banner').classList.remove('show');
-}
+function hideBanner(){ document.getElementById('banner').classList.remove('show'); }
 
 // ---------- flip render helper ----------
 function renderFlip(el, newText){
@@ -638,7 +596,6 @@ function renderFlip(el, newText){
   lastValues[el.id] = newText;
   buildSpans(el, newText, old);
 }
-
 function buildSpans(el, text, oldText){
   el.dataset.built = '1';
   const chars = text.split('');
@@ -664,6 +621,19 @@ function fmtMoney(n, currency){
   return symbol + n.toLocaleString('en-AU',{minimumFractionDigits:decimals,maximumFractionDigits:decimals});
 }
 
+// ---------- layout mode: BTC fills the screen if nothing else is configured ----------
+function updateLayoutMode(){
+  const app = document.getElementById('app');
+  const cycleWrap = document.getElementById('cycle');
+  if(cycleItems.length === 0){
+    app.classList.add('solo-mode');
+    cycleWrap.style.display = 'none';
+  }else{
+    app.classList.remove('solo-mode');
+    cycleWrap.style.display = '';
+  }
+}
+
 // ---------- cycle tile (secondary tickers) ----------
 function buildCycleItems(){
   cycleItems = [
@@ -671,6 +641,7 @@ function buildCycleItems(){
     ...settings.stocks.map(s=>({type:'stock',key:s}))
   ];
   cycleIndex = 0;
+  updateLayoutMode();
   const wrap = document.getElementById('cycle');
   if(cycleItems.length === 0){
     wrap.innerHTML = '<div class="cycle-empty">No other tickers added yet.<br>Tap ⚙ to add crypto or stock symbols — they\'ll cycle here.</div>';
@@ -696,10 +667,7 @@ function buildCycleItems(){
     d.className = 'd' + (i===0 ? ' active' : '');
     dotsWrap.appendChild(d);
   });
-  document.getElementById('cycleBody').onclick = ()=>{
-    advanceCycle();
-    restartCycleTimer();
-  };
+  document.getElementById('cycleBody').onclick = ()=>{ advanceCycle(); restartCycleTimer(); };
   renderCycleTile();
 }
 
@@ -751,14 +719,17 @@ function restartCycleTimer(){
   }
 }
 
-// ---------- sparkline (24h BTC) ----------
+// ---------- sparkline ----------
+const RANGE_LABEL = { '1':'24H', '7':'7D', '30':'30D', '365':'1Y' };
+
 async function fetchSparkline(){
   try{
-    const url = `https://api.coingecko.com/api/v3/coins/bitcoin/market_chart?vs_currency=${settings.currency}&days=1`;
+    const url = `https://api.coingecko.com/api/v3/coins/bitcoin/market_chart?vs_currency=${settings.currency}&days=${settings.chartRange}`;
     const res = await fetch(url);
     if(!res.ok) throw new Error('sparkline ' + res.status);
     const data = await res.json();
-    drawSparkline(data.prices || []);
+    lastSparkPoints = data.prices || [];
+    drawSparkline(lastSparkPoints);
   }catch(e){
     console.error('sparkline fetch failed', e);
   }
@@ -766,7 +737,7 @@ async function fetchSparkline(){
 
 function drawSparkline(points){
   const svg = document.getElementById('sparkSvg');
-  if(points.length < 2){ svg.innerHTML = ''; return; }
+  if(!points || points.length < 2){ svg.innerHTML = ''; return; }
   const prices = points.map(p=>p[1]);
   const min = Math.min(...prices);
   const max = Math.max(...prices);
@@ -783,21 +754,23 @@ function drawSparkline(points){
   const areaPath = linePath + ` L${W},${H} L0,${H} Z`;
 
   const up = prices[prices.length-1] >= prices[0];
-  const stroke = up ? 'var(--up)' : 'var(--down)';
+  const styles = getComputedStyle(document.documentElement);
+  const stroke = (up ? styles.getPropertyValue('--up') : styles.getPropertyValue('--down')).trim();
 
   svg.innerHTML = `
     <defs>
       <linearGradient id="sparkFill" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0%" stop-color="${up ? '#6FA97A' : '#C1554A'}" stop-opacity="0.28"/>
-        <stop offset="100%" stop-color="${up ? '#6FA97A' : '#C1554A'}" stop-opacity="0"/>
+        <stop offset="0%" stop-color="${stroke}" stop-opacity="0.28"/>
+        <stop offset="100%" stop-color="${stroke}" stop-opacity="0"/>
       </linearGradient>
     </defs>
     <path d="${areaPath}" fill="url(#sparkFill)" stroke="none"/>
     <path d="${linePath}" fill="none" stroke="${stroke}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
   `;
 
+  const label = RANGE_LABEL[settings.chartRange] || '24H';
   document.getElementById('sparkLabel').textContent =
-    `24H RANGE  ·  LOW ${fmtMoney(min, settings.currency)}  ·  HIGH ${fmtMoney(max, settings.currency)}`;
+    `${label} RANGE  ·  LOW ${fmtMoney(min, settings.currency)}  ·  HIGH ${fmtMoney(max, settings.currency)}`;
 }
 
 // ---------- fetchers ----------
@@ -823,7 +796,7 @@ async function fetchStocks(){
 
 async function refreshAll(){
   const dot = document.getElementById('statusDot');
-  let cryptoOk = false, stockOk = true;
+  let cryptoOk = false;
 
   try{
     const crypto = await fetchCrypto();
@@ -837,7 +810,6 @@ async function refreshAll(){
     const stocks = await fetchStocks();
     applyStocks(stocks);
   }catch(e){
-    stockOk = false;
     console.error('stock fetch failed:', e.message || e);
   }
 
@@ -846,7 +818,7 @@ async function refreshAll(){
     hideBanner();
   }else{
     dot.className = 'dot err';
-    showBanner('Price data blocked or unreachable. If you\'re viewing this inside Claude\'s preview, open the saved file in Safari (or Add to Home Screen) — the in-app preview restricts network access.');
+    showBanner('Price data blocked or unreachable. If you\'re viewing this inside Claude\'s preview, open the hosted URL in Safari instead — the in-app preview restricts network access.');
   }
 
   document.getElementById('lastUpdated').textContent =
@@ -873,15 +845,11 @@ function applyCrypto(data){
   settings.cryptoExtra.forEach(id=>{
     const d = data[id];
     const key = 'crypto-' + id;
-    if(d && d[vs] !== undefined){
-      latestData[key] = {
-        price: d[vs],
-        priceText: fmtMoney(d[vs], vs),
-        change: d[vs+'_24h_change']
-      };
-    }else{
-      latestData[key] = null;
-    }
+    latestData[key] = (d && d[vs] !== undefined) ? {
+      price: d[vs],
+      priceText: fmtMoney(d[vs], vs),
+      change: d[vs+'_24h_change']
+    } : null;
   });
 }
 
@@ -907,21 +875,17 @@ function restartPriceTimer(){
   if(priceTimer) clearInterval(priceTimer);
   priceTimer = setInterval(refreshAll, settings.interval * 1000);
 }
-
-let sparkTimer = null;
 function restartSparkTimer(){
   if(sparkTimer) clearInterval(sparkTimer);
-  sparkTimer = setInterval(fetchSparkline, 5 * 60 * 1000); // every 5 min regardless of price refresh rate
+  sparkTimer = setInterval(fetchSparkline, 5 * 60 * 1000);
 }
 
-// ---------- wake lock (keeps iPad screen on while page is open) ----------
+// ---------- wake lock ----------
 let wakeLock = null;
 async function requestWakeLock(){
   try{
-    if('wakeLock' in navigator){
-      wakeLock = await navigator.wakeLock.request('screen');
-    }
-  }catch(e){ /* not supported / denied — fine, user can lock via Settings > Auto-Lock */ }
+    if('wakeLock' in navigator){ wakeLock = await navigator.wakeLock.request('screen'); }
+  }catch(e){ /* not supported / denied — use Settings > Auto-Lock > Never as backup */ }
 }
 document.addEventListener('visibilitychange', ()=>{
   if(document.visibilityState === 'visible') requestWakeLock();
@@ -929,7 +893,7 @@ document.addEventListener('visibilitychange', ()=>{
 requestWakeLock();
 
 // ---------- init ----------
-(async function init(){
+(function init(){
   loadSettings();
   buildCycleItems();
   restartPriceTimer();
