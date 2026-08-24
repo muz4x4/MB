@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Step 4</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;700&family=Space+Grotesk:wght@400;500;600;700&display=swap');
+  :root{ --bg:#000; --panel:#050505; --line:#1A1A1A; --ink:#FFD400; --ink-dim:#5A5A5A; --amber:#2DA6FF; }
+  *{ box-sizing:border-box; margin:0; padding:0; }
+  html,body{ height:100%; background:var(--bg); color:var(--ink); overflow:hidden; font-family:'Space Grotesk',sans-serif; }
+  #app{ height:100vh; width:100vw; padding:28px 32px; display:flex; flex-direction:column; gap:16px; }
+  header{ display:flex; justify-content:space-between; align-items:center; flex-shrink:0; }
+  .brand h1{ font-size:15px; letter-spacing:.28em; font-weight:600; color:var(--ink-dim); text-transform:uppercase; }
+  .clock{ font-family:'Roboto Mono',monospace; font-size:14px; color:var(--ink-dim); display:flex; align-items:center; gap:14px; }
+  .gear{ width:34px;height:34px; border-radius:50%; border:1px solid var(--line); display:flex;align-items:center;justify-content:center; color:var(--ink-dim); cursor:pointer; }
+  .hero{ background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:24px 30px; flex:1; display:flex; flex-direction:column; justify-content:center; }
+  .hero-price{ font-family:'Roboto Mono',monospace; font-size:clamp(40px,10vw,110px); color:var(--ink); }
+  .hero-sub{ margin-top:10px; font-size:13px; color:var(--ink-dim); font-family:'Roboto Mono',monospace; }
+  footer{ display:flex; justify-content:space-between; font-family:'Roboto Mono',monospace; font-size:11px; color:var(--ink-dim); flex-shrink:0; }
+
+  .backdrop{ position:fixed; inset:0; background:rgba(0,0,0,.55); opacity:0; pointer-events:none; transition:opacity .25s; z-index:10; }
+  .backdrop.open{ opacity:1; pointer-events:auto; }
+  .drawer{ position:fixed; right:0; top:0; bottom:0; width:min(420px,92vw); background:var(--panel); border-left:1px solid var(--line); transform:translateX(100%); transition:transform .3s ease; z-index:11; padding:28px 26px; overflow-y:auto; }
+  .drawer.open{ transform:translateX(0); }
+  .field{ margin-bottom:22px; }
+  .field label{ display:block; font-size:12px; color:var(--ink-dim); margin-bottom:8px; }
+  select,input{ width:100%; background:var(--bg); border:1px solid var(--line); border-radius:8px; color:var(--ink); font-family:'Roboto Mono',monospace; font-size:14px; padding:10px 12px; }
+  button{ font-family:'Space Grotesk',sans-serif; font-weight:600; border:none; border-radius:8px; cursor:pointer; }
+  .btn-ghost{ background:transparent; border:1px solid var(--line); color:var(--ink-dim); width:100%; padding:12px; margin-top:8px; }
+  .status-line{ font-size:10px; color:var(--ink-dim); margin-top:14px; }
+</style>
+</head>
+<body>
+
+<div id="app">
+  <header>
+    <div class="brand"><h1>BTC Board — Step 4</h1></div>
+    <div class="clock">
+      <span id="clockText">--:--:--</span>
+      <div class="gear" id="gearBtn">⚙</div>
+    </div>
+  </header>
+
+  <div class="hero">
+    <div class="hero-price" id="heroPrice">waiting...</div>
+    <div class="hero-sub" id="heroSub"></div>
+  </div>
+
+  <footer>
+    <span id="lastUpdated">Not yet updated</span>
+    <span>step4-build-1</span>
+  </footer>
+</div>
+
+<div class="backdrop" id="backdrop"></div>
+<div class="drawer" id="drawer">
+  <div class="field">
+    <label>Refresh interval (seconds)</label>
+    <select id="intervalSelect">
+      <option value="5">5</option>
+      <option value="10">10</option>
+    </select>
+  </div>
+  <button class="btn-ghost" id="closeDrawer">Close</button>
+  <div class="status-line" id="storageStatus"></div>
+</div>
+
+<script>
+const STORAGE_KEY = 'step4-settings';
+let settings = { interval: 5 };
+let priceTimer = null;
+
+function testStorage(){
+  try{ localStorage.setItem('__t__','1'); const ok = localStorage.getItem('__t__')==='1'; localStorage.removeItem('__t__'); return ok; }
+  catch(e){ return false; }
+}
+function loadSettings(){
+  const statusEl = document.getElementById('storageStatus');
+  if(!testStorage()){
+    statusEl.textContent = 'Storage unavailable.';
+  }else{
+    try{
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if(raw) settings = { ...settings, ...JSON.parse(raw) };
+      statusEl.textContent = raw ? 'Storage OK — loaded.' : 'Storage OK — defaults.';
+    }catch(e){ statusEl.textContent = 'Storage read failed: ' + e.message; }
+  }
+  document.getElementById('intervalSelect').value = String(settings.interval);
+}
+function saveSettings(){
+  try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(settings)); }catch(e){}
+}
+
+document.getElementById('gearBtn').onclick = ()=>{
+  document.getElementById('backdrop').classList.add('open');
+  document.getElementById('drawer').classList.add('open');
+};
+function closeDrawer(){
+  document.getElementById('backdrop').classList.remove('open');
+  document.getElementById('drawer').classList.remove('open');
+}
+document.getElementById('backdrop').onclick = closeDrawer;
+document.getElementById('closeDrawer').onclick = closeDrawer;
+document.getElementById('intervalSelect').onchange = (e)=>{
+  settings.interval = parseInt(e.target.value,10);
+  saveSettings();
+  restartPriceTimer();
+};
+
+function tickClock(){ document.getElementById('clockText').textContent = new Date().toLocaleTimeString('en-AU',{hour12:false}); }
+setInterval(tickClock, 1000);
+tickClock();
+
+async function tick(){
+  document.getElementById('heroSub').textContent = 'fetching...';
+  try{
+    const res = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd');
+    const data = await res.json();
+    document.getElementById('heroPrice').textContent = '$' + data.bitcoin.usd;
+    document.getElementById('heroSub').textContent = 'ok ' + new Date().toLocaleTimeString('en-AU',{hour12:false});
+  }catch(e){
+    document.getElementById('heroSub').textContent = 'ERROR: ' + e.message;
+  }
+  document.getElementById('lastUpdated').textContent = 'Updated ' + new Date().toLocaleTimeString('en-AU',{hour12:false});
+}
+
+function restartPriceTimer(){
+  if(priceTimer) clearInterval(priceTimer);
+  priceTimer = setInterval(tick, settings.interval*1000);
+}
+
+loadSettings();
+restartPriceTimer();
+tick();
+</script>
+</body>
+</html>
