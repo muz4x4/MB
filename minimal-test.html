@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Minimal Test</title>
+<style>
+  body{ background:#111; color:#fff; font-family:monospace; font-size:20px; padding:20px; }
+  #log{ white-space:pre-wrap; line-height:1.6; }
+  #price{ font-size:60px; color:#4f4; margin:20px 0; }
+</style>
+</head>
+<body>
+<div id="price">waiting...</div>
+<div id="log"></div>
+
+<script>
+const logEl = document.getElementById('log');
+const priceEl = document.getElementById('price');
+function log(msg){
+  const line = new Date().toLocaleTimeString() + ' — ' + msg;
+  logEl.textContent += line + '\n';
+  console.log(line);
+}
+
+async function tick(){
+  log('tick: starting fetch...');
+  try{
+    const start = Date.now();
+    const res = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd');
+    const elapsed = Date.now() - start;
+    log('tick: fetch resolved in ' + elapsed + 'ms, status ' + res.status);
+    const data = await res.json();
+    log('tick: json parsed: ' + JSON.stringify(data));
+    priceEl.textContent = '$' + data.bitcoin.usd;
+  }catch(e){
+    log('tick: ERROR — ' + e.message);
+    priceEl.textContent = 'ERROR';
+  }
+}
+
+log('page loaded, starting 1s interval loop');
+tick();
+setInterval(tick, 1000);
+</script>
+</body>
+</html>
