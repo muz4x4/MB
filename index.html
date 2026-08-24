@@ -11,16 +11,16 @@
   :root{ --bg:#000; --panel:#050505; --line:#1A1A1A; --ink:#FFD400; --ink-dim:#5A5A5A; --amber:#2DA6FF; --up:#39FF14; --down:#FF1E3C; }
   *{ box-sizing:border-box; margin:0; padding:0; }
   html,body{ height:100%; background:var(--bg); color:var(--ink); overflow:hidden; font-family:'Space Grotesk',sans-serif; }
-  #app{ height:100vh; width:100vw; padding:28px 32px; display:flex; flex-direction:column; gap:16px; }
+  #app{ height:100vh; width:100vw; padding:16px 32px; display:flex; flex-direction:column; gap:16px; }
   header{ display:flex; justify-content:flex-end; align-items:center; flex-shrink:0; }
   .clock{ font-family:'Roboto Mono',monospace; font-size:14px; color:var(--ink-dim); display:flex; align-items:center; gap:16px; }
   .gear{ display:flex;align-items:center;justify-content:center; color:var(--ink-dim); cursor:pointer; font-size:34px; flex-shrink:0; padding:10px; }
   .hero{ background:transparent; border:none; padding:0; flex:1; display:flex; flex-direction:column; min-height:0; }
-  .price-row{ display:flex; align-items:baseline; gap:20px; flex-wrap:nowrap; min-width:0; flex-shrink:0; }
-  .ticker-badge{ font-family:'Roboto Mono',monospace; font-weight:700; letter-spacing:.02em; color:var(--amber); font-size:clamp(28px,8vw,90px); line-height:1; white-space:nowrap; flex-shrink:0; }
-  .hero-price{ font-family:'Roboto Mono',monospace; font-size:clamp(32px,9vw,100px); color:var(--ink); white-space:nowrap; min-width:0; }
+  .price-row{ display:flex; align-items:baseline; justify-content:space-between; gap:20px; flex-wrap:nowrap; min-width:0; flex-shrink:0; }
+  .ticker-badge{ font-family:'Roboto Mono',monospace; font-weight:700; letter-spacing:.02em; color:var(--amber); font-size:clamp(32px,9vw,100px); line-height:1; white-space:nowrap; flex-shrink:0; }
+  .hero-price{ font-family:'Roboto Mono',monospace; font-size:clamp(32px,9vw,100px); color:var(--ink); white-space:nowrap; min-width:0; text-align:right; }
   .hero-sub{ margin-top:10px; font-size:13px; color:var(--ink-dim); font-family:'Roboto Mono',monospace; flex-shrink:0; }
-  .spark-wrap{ margin-top:40px; margin-bottom:34px; flex:1; min-height:0; position:relative; }
+  .spark-wrap{ margin-top:24px; margin-bottom:34px; flex:1; min-height:0; position:relative; }
   .spark-wrap svg{ width:100%; height:100%; overflow:visible; position:relative; z-index:1; }
   .spark-label{ font-family:'Roboto Mono',monospace; font-weight:700; font-size:clamp(16px,2.2vw,24px); color:var(--amber); letter-spacing:.08em; margin-top:10px; flex-shrink:0; }
   .xaxis-wrap{ position:relative; height:20px; margin-top:6px; flex-shrink:0; }
@@ -110,9 +110,6 @@
   <div class="field">
     <label>Refresh interval (seconds)</label>
     <select id="intervalSelect">
-      <option value="1">1</option>
-      <option value="3">3</option>
-      <option value="5">5</option>
       <option value="10">10</option>
       <option value="30">30</option>
       <option value="60">60</option>
@@ -143,7 +140,7 @@
 
 <script>
 const STORAGE_KEY = 'btcboard-v2-settings';
-const DEFAULTS = { currency:'usd', chartRange:'1', interval:5, cgApiKey:'', sleepEnabled:false, sleepStart:'21:30', sleepEnd:'05:30' };
+const DEFAULTS = { currency:'usd', chartRange:'1', interval:10, cgApiKey:'', sleepEnabled:false, sleepStart:'21:30', sleepEnd:'05:30' };
 let settings = { ...DEFAULTS };
 let priceTimer = null;
 let lastSparkPoints = [];
