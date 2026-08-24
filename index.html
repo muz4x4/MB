@@ -8,41 +8,23 @@
 <meta name="mobile-web-app-capable" content="yes">
 <title>BTC Board</title>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;700&family=Space+Grotesk:wght@400;500;600;700&family=Silkscreen:wght@400;700&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;700&family=Space+Grotesk:wght@400;500;600;700&display=swap');
 
   :root{
-    --bg: #14110F;
-    --panel: #1C1815;
-    --panel-2: #211C18;
-    --line: #35302A;
-    --ink: #EDE6DA;
-    --ink-dim: #9C948A;
-    --amber: #E8A33D;
-    --amber-dim: #7A5A28;
-    --up: #6FA97A;
-    --down: #C1554A;
+    --bg: #000000;
+    --panel: #050505;
+    --panel-2: #0A0A0A;
+    --line: #1A1A1A;
+    --ink: #FFD400;
+    --ink-dim: #5A5A5A;
+    --amber: #2DA6FF;
+    --up: #39FF14;
+    --down: #FF1E3C;
   }
-
   *{ box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
+  html,body{ height:100%; background:var(--bg); color:var(--ink); overflow:hidden; font-family:'Space Grotesk',sans-serif; -webkit-user-select:none; user-select:none; }
 
-  html,body{
-    height:100%;
-    background:var(--bg);
-    color:var(--ink);
-    overflow:hidden;
-    font-family:'Space Grotesk',sans-serif;
-    -webkit-user-select:none; user-select:none;
-  }
-
-  #app{
-    height:100vh;
-    width:100vw;
-    padding: max(28px, env(safe-area-inset-top)) max(32px, env(safe-area-inset-right)) max(28px, env(safe-area-inset-bottom)) max(32px, env(safe-area-inset-left));
-    display:flex;
-    flex-direction:column;
-    gap:16px;
-    background:transparent;
-  }
+  #app{ height:100vh; width:100vw; padding: max(28px, env(safe-area-inset-top)) max(32px, env(safe-area-inset-right)) max(28px, env(safe-area-inset-bottom)) max(32px, env(safe-area-inset-left)); display:flex; flex-direction:column; gap:16px; }
 
   header{ display:flex; justify-content:space-between; align-items:center; flex-shrink:0; }
   .brand{ display:flex; align-items:baseline; gap:10px; }
@@ -56,89 +38,29 @@
 
   .banner{ display:none; align-items:center; justify-content:space-between; gap:14px; background:rgba(193,85,74,.10); border:1px solid rgba(193,85,74,.35); color:var(--down); border-radius:10px; padding:10px 16px; font-size:13px; line-height:1.5; flex-shrink:0; }
   .banner.show{ display:flex; }
-  .banner button{ background:transparent; border:1px solid var(--down); color:var(--down); padding:6px 12px; font-size:12px; border-radius:6px; flex-shrink:0; }
+  .banner button{ background:transparent; border:1px solid var(--down); color:var(--down); padding:6px 12px; font-size:12px; border-radius:6px; flex-shrink:0; font-family:inherit; }
 
-  /* ---------- hero (BTC — the whole app now) ---------- */
-  .hero{
-    background:linear-gradient(180deg,var(--panel),var(--panel-2));
-    border:1px solid var(--line);
-    border-radius:14px;
-    padding:24px 30px;
-    position:relative;
-    overflow:hidden;
-    flex:1;
-    display:flex;
-    flex-direction:column;
-    justify-content:center;
-    min-height:0;
-  }
+  .hero{ background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:24px 30px; flex:1; display:flex; flex-direction:column; justify-content:center; min-height:0; }
   .hero-top{ display:flex; justify-content:space-between; align-items:flex-start; gap:16px; }
   .hero-label{ font-size:13px; letter-spacing:.24em; color:var(--ink-dim); text-transform:uppercase; margin-bottom:10px; }
   .price-line{ display:flex; flex-direction:column; align-items:flex-start; gap:2px; min-width:0; }
-  .ticker-badge{
-    font-family:'Roboto Mono',monospace;
-    font-weight:700;
-    letter-spacing:.04em;
-    color:var(--amber);
-    font-size:clamp(40px,10vw,120px);
-    line-height:1;
-    white-space:nowrap;
-    max-width:100%;
-    transition:font-size .3s, font-family .3s;
-  }
-  .hero-price{
-    font-family:'Roboto Mono',monospace;
-    font-size:clamp(44px,11vw,120px);
-    font-weight:500;
-    line-height:1;
-    color:var(--ink);
-    letter-spacing:-.01em;
-    white-space:nowrap;
-    max-width:100%;
-    transition:font-size .3s;
-  }
-  .flipchar{ display:inline-block; transition:transform .22s ease, opacity .22s ease; transform-origin:50% 60%; }
-  .flipchar.flip{ transform:rotateX(90deg); opacity:0; }
-  .flipchar.cents{ font-size:.62em; opacity:.75; }
+  .ticker-badge{ font-family:'Roboto Mono',monospace; font-weight:700; letter-spacing:.04em; color:var(--amber); font-size:clamp(36px,9vw,110px); line-height:1; white-space:nowrap; }
+  .hero-price{ font-family:'Roboto Mono',monospace; font-size:clamp(40px,10vw,110px); font-weight:500; line-height:1; color:var(--ink); letter-spacing:-.01em; white-space:nowrap; }
   .hero-right{ text-align:right; flex-shrink:0; }
-  .hero-change{ font-family:'Roboto Mono',monospace; font-size:clamp(18px,2.4vw,28px); padding:6px 14px; border-radius:8px; display:inline-block; }
-  .hero-change.up{ color:var(--up); background:rgba(111,169,122,.12); }
-  .hero-change.down{ color:var(--down); background:rgba(193,85,74,.12); }
+  .hero-change{ font-family:'Roboto Mono',monospace; font-size:clamp(16px,2.2vw,26px); padding:6px 14px; border-radius:8px; display:inline-block; }
+  .hero-change.up{ color:var(--up); background:rgba(57,255,20,.10); }
+  .hero-change.down{ color:var(--down); background:rgba(255,30,60,.10); }
   .hero-sub{ margin-top:10px; font-size:13px; color:var(--ink-dim); font-family:'Roboto Mono',monospace; }
 
-  .spark-wrap{ margin-top:28px; height:clamp(60px,20vh,150px); transition:height .3s; flex-shrink:0; position:relative; }
-  .spark-wrap svg{ width:100%; height:100%; overflow:visible; position:relative; z-index:1; }
+  .spark-wrap{ margin-top:24px; height:clamp(60px,20vh,150px); position:relative; }
+  .spark-wrap svg{ width:100%; height:100%; overflow:visible; }
   .spark-label{ font-family:'Roboto Mono',monospace; font-size:11px; color:var(--ink-dim); letter-spacing:.1em; margin-top:8px; }
-
-  .spark-callout{
-    position:absolute; z-index:3;
-    background:var(--panel-2); border:1px solid var(--line); border-radius:6px;
-    padding:2px 7px; font-family:'Roboto Mono',monospace; font-size:11px; color:var(--ink);
-    white-space:nowrap; pointer-events:none; display:none;
-  }
-  .spark-callout.show{ display:block; }
-  .spark-callout.below{ transform:translate(-50%,10px); }
-  .spark-callout.below::before{ content:""; position:absolute; top:-5px; left:50%; transform:translateX(-50%); border-left:5px solid transparent; border-right:5px solid transparent; border-bottom:5px solid var(--line); }
-  .spark-callout.above{ transform:translate(-50%,calc(-100% - 10px)); }
-  .spark-callout.above::before{ content:""; position:absolute; bottom:-5px; left:50%; transform:translateX(-50%); border-left:5px solid transparent; border-right:5px solid transparent; border-top:5px solid var(--line); }
 
   footer{ display:flex; justify-content:space-between; font-family:'Roboto Mono',monospace; font-size:11px; color:var(--ink-dim); letter-spacing:.06em; flex-shrink:0; }
 
-  /* ---------- overnight screen-off ---------- */
   #app.sleep-mode:not(.peek){ background:#000; }
   #app.sleep-mode:not(.peek) > *{ visibility:hidden; }
 
-  /* ---------- LED matrix display mode ---------- */
-  #app.matrix-mode{ border:16px solid; border-image:linear-gradient(135deg,#9a9a9a,#4a4a4a 40%,#2a2a2a 60%,#9a9a9a) 1; box-shadow:inset 0 0 40px rgba(0,0,0,.7); }
-  #app.matrix-mode .ticker-badge, #app.matrix-mode .hero-price, #app.matrix-mode .hero-change, #app.matrix-mode .clock{ font-family:'Silkscreen',monospace; letter-spacing:.02em; }
-  #app.matrix-mode .hero{ border:none; background:#000; border-radius:2px; }
-  #app.matrix-mode::after{
-    content:""; position:fixed; inset:0; pointer-events:none; z-index:5;
-    background-image:radial-gradient(circle, rgba(0,0,0,.6) 1px, transparent 1.6px);
-    background-size:5px 5px; mix-blend-mode:multiply;
-  }
-
-  /* ---------- settings drawer ---------- */
   .backdrop{ position:fixed; inset:0; background:rgba(0,0,0,.55); opacity:0; pointer-events:none; transition:opacity .25s; z-index:10; }
   .backdrop.open{ opacity:1; pointer-events:auto; }
   .drawer{ position:fixed; right:0; top:0; bottom:0; width:min(420px,92vw); background:var(--panel); border-left:1px solid var(--line); transform:translateX(100%); transition:transform .3s ease; z-index:11; padding:28px 26px; overflow-y:auto; }
@@ -148,25 +70,19 @@
   .field label{ display:block; font-size:12px; color:var(--ink-dim); margin-bottom:8px; letter-spacing:.05em; }
   .field .hint{ font-size:11px; color:var(--ink-dim); margin-top:6px; line-height:1.5; }
   .field .hint a{ color:var(--amber); }
-  input[type=text],input[type=password],select,input[type=time]{
-    width:100%; background:var(--bg); border:1px solid var(--line); border-radius:8px; color:var(--ink);
-    font-family:'Roboto Mono',monospace; font-size:14px; padding:10px 12px;
-  }
-  .row-add{ display:flex; gap:8px; }
+  input[type=text],input[type=password],select,input[type=time]{ width:100%; background:var(--bg); border:1px solid var(--line); border-radius:8px; color:var(--ink); font-family:'Roboto Mono',monospace; font-size:14px; padding:10px 12px; }
+  .row-add{ display:flex; gap:8px; align-items:center; }
   button{ font-family:'Space Grotesk',sans-serif; font-weight:600; border:none; border-radius:8px; cursor:pointer; }
   .btn-ghost{ background:transparent; border:1px solid var(--line); color:var(--ink-dim); width:100%; padding:12px; font-size:13px; margin-top:8px; }
   .save-note{ font-size:12px; color:var(--up); height:16px; margin-top:10px; }
-  .status-line{ font-size:10px; color:var(--ink-dim); letter-spacing:.05em; }
+  .status-line{ font-size:10px; color:var(--ink-dim); letter-spacing:.05em; margin-top:14px; }
 </style>
 </head>
 <body>
 
 <div id="app">
   <header>
-    <div class="brand">
-      <span class="mark">◆</span>
-      <h1>BTC Board</h1>
-    </div>
+    <div class="brand"><span class="mark">◆</span><h1>BTC Board</h1></div>
     <div class="clock">
       <span class="dot" id="statusDot"></span>
       <span id="clockText">--:--:--</span>
@@ -184,51 +100,28 @@
       <div>
         <div class="hero-label" id="heroLabel">BTC / USD</div>
         <div class="price-line">
-          <span class="ticker-badge" id="tickerBadge">BTC</span>
-          <div class="hero-price" id="heroPrice">— — — — —</div>
+          <span class="ticker-badge">BTC</span>
+          <div class="hero-price" id="heroPrice">waiting...</div>
         </div>
       </div>
       <div class="hero-right">
         <div class="hero-change" id="heroChange">—</div>
-        <div class="hero-sub" id="heroSub">waiting for data…</div>
+        <div class="hero-sub" id="heroSub"></div>
       </div>
     </div>
-    <div class="spark-wrap">
-      <svg id="sparkSvg" viewBox="0 0 600 70" preserveAspectRatio="none"></svg>
-      <div class="spark-callout below" id="sparkMaxLabel"></div>
-      <div class="spark-callout above" id="sparkMinLabel"></div>
-    </div>
+    <div class="spark-wrap"><svg id="sparkSvg" viewBox="0 0 600 70" preserveAspectRatio="none"></svg></div>
     <div class="spark-label" id="sparkLabel">24H RANGE</div>
   </div>
 
   <footer>
     <span id="lastUpdated">Not yet updated</span>
-    <span id="buildStamp">build 2026-08-24-h (debug2)</span>
+    <span id="buildStamp">build 2026-08-24-i (rebuilt from minimal test)</span>
   </footer>
 </div>
 
 <div class="backdrop" id="backdrop"></div>
 <div class="drawer" id="drawer">
   <h2>Configure Board</h2>
-
-  <div class="field">
-    <label>Colour palette</label>
-    <select id="themeSelect">
-      <option value="mono">Mono — black & white</option>
-      <option value="slate">Slate — muted blue</option>
-      <option value="amber">Amber — warm board (default)</option>
-      <option value="terminal">Terminal — phosphor green</option>
-      <option value="vivid">Vivid — very colourful</option>
-      <option value="led">LED Board — bold red/green/blue/yellow</option>
-    </select>
-  </div>
-
-  <div class="field">
-    <div class="row-add" style="align-items:center;">
-      <input type="checkbox" id="matrixMode" style="width:20px;height:20px;flex:0 0 auto;accent-color:var(--amber);">
-      <span style="font-size:13px;color:var(--ink-dim);">LED matrix look (pixel font + dot grid + metal bezel)</span>
-    </div>
-  </div>
 
   <div class="field">
     <label>Display currency</label>
@@ -257,133 +150,54 @@
       <option value="10">Every 10 seconds</option>
       <option value="30">Every 30 seconds</option>
       <option value="60">Every 60 seconds</option>
-      <option value="300">Every 5 minutes</option>
     </select>
-    <div class="hint">Without a key, CoinGecko's free tier only allows 5–15 calls/min — stick to 5s or 10s. With your Demo key below, 1 second is safe.</div>
   </div>
 
   <div class="field">
     <label>CoinGecko Demo API key</label>
     <input type="password" id="cgKeyInput" placeholder="paste key here" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">
-    <div class="hint">Free, no cost — sign up at <a href="https://www.coingecko.com/en/api/pricing" target="_blank">coingecko.com/api/pricing</a> → Demo plan. Saves automatically the moment you tap away from this field.</div>
+    <div class="hint">Free at <a href="https://www.coingecko.com/en/api/pricing" target="_blank">coingecko.com/api/pricing</a> → Demo plan. Saves the instant you tap away.</div>
   </div>
 
   <div class="field">
     <label>Overnight screen-off</label>
-    <div class="row-add" style="align-items:center;">
+    <div class="row-add">
       <input type="checkbox" id="sleepEnabled" style="width:20px;height:20px;flex:0 0 auto;accent-color:var(--amber);">
       <span style="font-size:13px;color:var(--ink-dim);">Enable scheduled screen-off</span>
     </div>
     <div class="row-add" style="margin-top:12px;">
-      <div style="flex:1;">
-        <div class="hint" style="margin-bottom:4px;">Off at</div>
-        <input type="time" id="sleepStart">
-      </div>
-      <div style="flex:1;">
-        <div class="hint" style="margin-bottom:4px;">On at</div>
-        <input type="time" id="sleepEnd">
-      </div>
+      <div style="flex:1;"><div class="hint" style="margin-bottom:4px;">Off at</div><input type="time" id="sleepStart"></div>
+      <div style="flex:1;"><div class="hint" style="margin-bottom:4px;">On at</div><input type="time" id="sleepEnd"></div>
     </div>
-    <div class="hint">Handles overnight ranges fine (e.g. 21:30 → 05:30). Tap the black screen to peek for 8 seconds. Note: this blacks out page content only — it can't dim the iPad's actual backlight.</div>
+    <div class="hint">Tap the black screen to peek for 8 seconds.</div>
   </div>
 
   <button class="btn-ghost" id="closeDrawer">Close</button>
   <div class="save-note" id="saveNote"></div>
-  <div class="status-line" id="storageStatus" style="margin-top:14px;"></div>
+  <div class="status-line" id="storageStatus"></div>
 </div>
 
 <script>
 const STORAGE_KEY = 'btc-board-settings';
-const DEFAULTS = {
-  currency: 'usd',
-  interval: 5,
-  chartRange: '1',
-  theme: 'led',
-  matrixMode: false,
-  sleepEnabled: false,
-  sleepStart: '21:30',
-  sleepEnd: '05:30',
-  cgApiKey: ''
-};
-
-const THEMES = {
-  mono:    { bg:'#0F0F0F', panel:'#1A1A1A', panel2:'#1E1E1E', line:'#333333', ink:'#F4F4F4', inkDim:'#8C8C8C', amber:'#F4F4F4', amberDim:'#5C5C5C', up:'#F4F4F4', down:'#7A7A7A' },
-  slate:   { bg:'#12151A', panel:'#1B2029', panel2:'#1F2530', line:'#2E3642', ink:'#E7ECF2', inkDim:'#8791A0', amber:'#6FA8DC', amberDim:'#3E5A73', up:'#6FA97A', down:'#C1554A' },
-  amber:   { bg:'#14110F', panel:'#1C1815', panel2:'#211C18', line:'#35302A', ink:'#EDE6DA', inkDim:'#9C948A', amber:'#E8A33D', amberDim:'#7A5A28', up:'#6FA97A', down:'#C1554A' },
-  terminal:{ bg:'#0B120C', panel:'#101B12', panel2:'#132015', line:'#24361F', ink:'#CFEFC8', inkDim:'#6E9468', amber:'#3DDC6B', amberDim:'#1F7A3E', up:'#3DDC6B', down:'#E85C5C' },
-  vivid:   { bg:'#15121F', panel:'#1E1A2E', panel2:'#241F38', line:'#3A3355', ink:'#F5EFFF', inkDim:'#9C90C0', amber:'#FF3EA5', amberDim:'#8C2568', up:'#00E0C0', down:'#FF6B35' },
-  led:     { bg:'#000000', panel:'#050505', panel2:'#0A0A0A', line:'#1A1A1A', ink:'#FFD400', inkDim:'#5A5A5A', amber:'#2DA6FF', amberDim:'#154D80', up:'#39FF14', down:'#FF1E3C' }
-};
-
-function applyTheme(name){
-  const t = THEMES[name] || THEMES.amber;
-  const root = document.documentElement.style;
-  root.setProperty('--bg', t.bg);
-  root.setProperty('--panel', t.panel);
-  root.setProperty('--panel-2', t.panel2);
-  root.setProperty('--line', t.line);
-  root.setProperty('--ink', t.ink);
-  root.setProperty('--ink-dim', t.inkDim);
-  root.setProperty('--amber', t.amber);
-  root.setProperty('--amber-dim', t.amberDim);
-  root.setProperty('--up', t.up);
-  root.setProperty('--down', t.down);
-  drawSparkline(lastSparkPoints);
-}
-
+const DEFAULTS = { currency:'usd', interval:5, chartRange:'1', sleepEnabled:false, sleepStart:'21:30', sleepEnd:'05:30', cgApiKey:'' };
 let settings = { ...DEFAULTS };
-let lastValues = {};
-let priceTimer = null;
-let sparkTimer = null;
-let lastSparkPoints = [];
+let priceTimer = null, sparkTimer = null, lastSparkPoints = [];
 
-// ---------- storage self-test — proves definitively whether persistence works on this device ----------
 function testStorage(){
-  try{
-    localStorage.setItem('__test__','1');
-    const ok = localStorage.getItem('__test__') === '1';
-    localStorage.removeItem('__test__');
-    return ok;
-  }catch(e){ return false; }
+  try{ localStorage.setItem('__t__','1'); const ok = localStorage.getItem('__t__')==='1'; localStorage.removeItem('__t__'); return ok; }
+  catch(e){ return false; }
 }
-
 function loadSettings(){
-  const works = testStorage();
   const statusEl = document.getElementById('storageStatus');
-  if(!works){
-    statusEl.textContent = 'Storage unavailable on this device/browser (Private Browsing mode blocks it — check Safari settings). Settings will not persist between launches.';
-    statusEl.style.color = 'var(--down)';
+  if(!testStorage()){
+    statusEl.textContent = 'Storage unavailable (Private Browsing?) — settings will not persist.';
   }else{
     try{
       const raw = localStorage.getItem(STORAGE_KEY);
-      if(raw){ settings = { ...DEFAULTS, ...JSON.parse(raw) }; }
-      statusEl.textContent = raw ? 'Storage OK — saved settings loaded.' : 'Storage OK — no saved settings yet, using defaults.';
-      statusEl.style.color = 'var(--ink-dim)';
-    }catch(e){
-      statusEl.textContent = 'Storage read failed: ' + e.message;
-      statusEl.style.color = 'var(--down)';
-    }
+      if(raw) settings = { ...DEFAULTS, ...JSON.parse(raw) };
+      statusEl.textContent = raw ? 'Storage OK — settings loaded.' : 'Storage OK — using defaults.';
+    }catch(e){ statusEl.textContent = 'Storage read failed: ' + e.message; }
   }
-  hydrateDrawer();
-  applyTheme(settings.theme);
-  document.getElementById('app').classList.toggle('matrix-mode', settings.matrixMode);
-}
-
-function saveSettings(){
-  try{
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
-    const note = document.getElementById('saveNote');
-    note.textContent = 'Saved';
-    setTimeout(()=> note.textContent = '', 1500);
-  }catch(e){
-    console.error('save failed', e);
-    document.getElementById('saveNote').textContent = 'Save failed: ' + e.message;
-  }
-}
-
-function hydrateDrawer(){
-  document.getElementById('themeSelect').value = settings.theme;
-  document.getElementById('matrixMode').checked = settings.matrixMode;
   document.getElementById('currencySelect').value = settings.currency;
   document.getElementById('rangeSelect').value = settings.chartRange;
   document.getElementById('intervalSelect').value = String(settings.interval);
@@ -392,347 +206,163 @@ function hydrateDrawer(){
   document.getElementById('sleepStart').value = settings.sleepStart;
   document.getElementById('sleepEnd').value = settings.sleepEnd;
 }
+function saveSettings(){
+  try{
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
+    const n = document.getElementById('saveNote'); n.textContent = 'Saved'; setTimeout(()=> n.textContent='',1500);
+  }catch(e){ document.getElementById('saveNote').textContent = 'Save failed: ' + e.message; }
+}
 
-document.getElementById('gearBtn').onclick = ()=>{
-  document.getElementById('backdrop').classList.add('open');
-  document.getElementById('drawer').classList.add('open');
-};
+document.getElementById('gearBtn').onclick = ()=>{ document.getElementById('backdrop').classList.add('open'); document.getElementById('drawer').classList.add('open'); };
 document.getElementById('backdrop').onclick = closeDrawer;
 document.getElementById('closeDrawer').onclick = closeDrawer;
-document.getElementById('retryBtn').onclick = refreshAll;
+document.getElementById('retryBtn').onclick = tick;
+function closeDrawer(){ document.getElementById('backdrop').classList.remove('open'); document.getElementById('drawer').classList.remove('open'); }
 
-function closeDrawer(){
-  document.getElementById('backdrop').classList.remove('open');
-  document.getElementById('drawer').classList.remove('open');
-}
+document.getElementById('currencySelect').onchange = e=>{ settings.currency=e.target.value; saveSettings(); tick(); fetchSparkline(); };
+document.getElementById('rangeSelect').onchange = e=>{ settings.chartRange=e.target.value; saveSettings(); fetchSparkline(); };
+document.getElementById('intervalSelect').onchange = e=>{ settings.interval=parseInt(e.target.value,10); saveSettings(); restartPriceTimer(); };
+document.getElementById('sleepEnabled').onchange = e=>{ settings.sleepEnabled=e.target.checked; saveSettings(); };
+document.getElementById('sleepStart').onchange = e=>{ settings.sleepStart=e.target.value||DEFAULTS.sleepStart; saveSettings(); };
+document.getElementById('sleepEnd').onchange = e=>{ settings.sleepEnd=e.target.value||DEFAULTS.sleepEnd; saveSettings(); };
+document.getElementById('cgKeyInput').addEventListener('blur', ()=>{ settings.cgApiKey = document.getElementById('cgKeyInput').value.trim(); saveSettings(); });
 
-// every control applies + saves itself immediately — nothing waits for the drawer to close
-document.getElementById('themeSelect').onchange = (e)=>{ settings.theme = e.target.value; applyTheme(settings.theme); saveSettings(); };
-document.getElementById('matrixMode').onchange = (e)=>{ settings.matrixMode = e.target.checked; document.getElementById('app').classList.toggle('matrix-mode', settings.matrixMode); saveSettings(); };
-document.getElementById('currencySelect').onchange = (e)=>{ settings.currency = e.target.value; saveSettings(); refreshAll(); fetchSparkline(); };
-document.getElementById('rangeSelect').onchange = (e)=>{ settings.chartRange = e.target.value; saveSettings(); fetchSparkline(); };
-document.getElementById('intervalSelect').onchange = (e)=>{ settings.interval = parseInt(e.target.value,10); saveSettings(); restartPriceTimer(); };
-document.getElementById('sleepEnabled').onchange = (e)=>{ settings.sleepEnabled = e.target.checked; saveSettings(); };
-document.getElementById('sleepStart').onchange = (e)=>{ settings.sleepStart = e.target.value || DEFAULTS.sleepStart; saveSettings(); };
-document.getElementById('sleepEnd').onchange = (e)=>{ settings.sleepEnd = e.target.value || DEFAULTS.sleepEnd; saveSettings(); };
-document.getElementById('cgKeyInput').addEventListener('blur', ()=>{
-  settings.cgApiKey = document.getElementById('cgKeyInput').value.trim();
-  saveSettings();
-});
-
-// ---------- clock ----------
-function tickClock(){
-  document.getElementById('clockText').textContent = new Date().toLocaleTimeString('en-AU',{hour12:false});
-  updateSleepState();
-}
+function tickClock(){ document.getElementById('clockText').textContent = new Date().toLocaleTimeString('en-AU',{hour12:false}); updateSleepState(); }
 setInterval(tickClock, 1000);
 tickClock();
 
-// ---------- overnight screen-off ----------
-function timeToMinutes(str){ const [h,m] = str.split(':').map(Number); return h*60 + m; }
+function timeToMinutes(s){ const [h,m]=s.split(':').map(Number); return h*60+m; }
 function isSleepNow(){
   if(!settings.sleepEnabled) return false;
-  const now = new Date();
-  const nowMin = now.getHours()*60 + now.getMinutes();
-  const start = timeToMinutes(settings.sleepStart);
-  const end = timeToMinutes(settings.sleepEnd);
-  if(start === end) return false;
-  return start < end ? (nowMin >= start && nowMin < end) : (nowMin >= start || nowMin < end);
+  const now = new Date(); const nowMin = now.getHours()*60+now.getMinutes();
+  const start = timeToMinutes(settings.sleepStart), end = timeToMinutes(settings.sleepEnd);
+  if(start===end) return false;
+  return start<end ? (nowMin>=start && nowMin<end) : (nowMin>=start || nowMin<end);
 }
-let wasAsleep = false;
+let wasAsleep = false, peekTimer = null;
 function updateSleepState(){
-  const app = document.getElementById('app');
-  const asleep = isSleepNow();
+  const app = document.getElementById('app'); const asleep = isSleepNow();
   app.classList.toggle('sleep-mode', asleep);
-  if(asleep === wasAsleep) return;
+  if(asleep===wasAsleep) return;
   wasAsleep = asleep;
-  if(asleep){
-    if(priceTimer) clearInterval(priceTimer);
-    if(sparkTimer) clearInterval(sparkTimer);
-  }else{
-    restartPriceTimer();
-    restartSparkTimer();
-    refreshAll();
-    fetchSparkline();
-    app.classList.remove('peek');
-  }
+  if(asleep){ if(priceTimer) clearInterval(priceTimer); if(sparkTimer) clearInterval(sparkTimer); }
+  else{ restartPriceTimer(); restartSparkTimer(); tick(); fetchSparkline(); app.classList.remove('peek'); }
 }
-let peekTimer = null;
 document.getElementById('app').addEventListener('click', ()=>{
   const app = document.getElementById('app');
   if(!app.classList.contains('sleep-mode')) return;
-  app.classList.add('peek');
-  clearTimeout(peekTimer);
-  peekTimer = setTimeout(()=>{ app.classList.remove('peek'); }, 8000);
+  app.classList.add('peek'); clearTimeout(peekTimer);
+  peekTimer = setTimeout(()=> app.classList.remove('peek'), 8000);
 });
 
-// ---------- status banner ----------
 function showBanner(msg){ document.getElementById('bannerText').textContent = msg; document.getElementById('banner').classList.add('show'); }
 function hideBanner(){ document.getElementById('banner').classList.remove('show'); }
 
-// ---------- auto-fit: guarantees price/ticker text never wraps or overflows ----------
-function autoFit(el){
-  if(!el || !el.parentElement) return;
-  el.style.fontSize = '';
-  requestAnimationFrame(()=>{
-    const maxWidth = el.parentElement.clientWidth;
-    if(!maxWidth) return;
-    let size = parseFloat(getComputedStyle(el).fontSize);
-    let guard = 0;
-    while(el.scrollWidth > maxWidth && size > 16 && guard < 60){
-      size -= 1; el.style.fontSize = size + 'px'; guard++;
-    }
-  });
-}
-window.addEventListener('resize', ()=>{ autoFit(document.getElementById('heroPrice')); autoFit(document.getElementById('tickerBadge')); });
-window.addEventListener('orientationchange', ()=> setTimeout(()=>{ autoFit(document.getElementById('heroPrice')); autoFit(document.getElementById('tickerBadge')); }, 200));
-
-// ---------- flip render helper ----------
-function renderFlip(el, newText){
-  const old = lastValues[el.id] || '';
-  if(old === newText){ if(!el.dataset.built) buildSpans(el, newText); autoFit(el); return; }
-  lastValues[el.id] = newText;
-  buildSpans(el, newText, old);
-  autoFit(el);
-}
-function buildSpans(el, text, oldText){
-  el.dataset.built = '1';
-  const chars = text.split('');
-  const oldChars = (oldText||'').split('');
-  const dotIndex = text.indexOf('.');
-  el.innerHTML = '';
-  chars.forEach((ch,i)=>{
-    const span = document.createElement('span');
-    span.className = 'flipchar';
-    if(dotIndex !== -1 && i > dotIndex) span.classList.add('cents');
-    span.textContent = ch;
-    el.appendChild(span);
-    if(oldText !== undefined && oldChars[i] !== ch){
-      span.classList.add('flip');
-      setTimeout(()=>{ span.classList.remove('flip'); }, 220);
-    }
-  });
-}
-
 function fmtMoney(n, currency){
-  if(n === null || n === undefined || isNaN(n)) return '—';
-  const symbol = currency === 'usd' ? '$' : 'A$';
-  const decimals = n < 10 ? 4 : 2;
+  if(n===null||n===undefined||isNaN(n)) return '—';
+  const symbol = currency==='usd' ? '$' : 'A$';
+  const decimals = n<10 ? 4 : 2;
   return symbol + n.toLocaleString('en-AU',{minimumFractionDigits:decimals,maximumFractionDigits:decimals});
 }
 
-// ---------- sparkline ----------
-const RANGE_LABEL = { '1':'24H', '7':'7D', '30':'30D', '365':'1Y' };
-
-async function fetchSparkline(){
-  try{
-    let url = `https://api.coingecko.com/api/v3/coins/bitcoin/market_chart?vs_currency=${settings.currency}&days=${settings.chartRange}`;
-    if(settings.cgApiKey) url += `&x_cg_demo_api_key=${encodeURIComponent(settings.cgApiKey)}`;
-    const res = await fetchWithTimeout(url, 8000);
-    if(!res.ok) throw new Error('sparkline ' + res.status);
-    const data = await res.json();
-    lastSparkPoints = data.prices || [];
-    drawSparkline(lastSparkPoints);
-  }catch(e){
-    console.error('sparkline fetch failed', e);
-  }
-}
-
-function drawSparkline(points){
-  const svg = document.getElementById('sparkSvg');
-  const maxLabel = document.getElementById('sparkMaxLabel');
-  const minLabel = document.getElementById('sparkMinLabel');
-  if(!points || points.length < 2){
-    svg.innerHTML = '';
-    maxLabel.classList.remove('show');
-    minLabel.classList.remove('show');
-    return;
-  }
-  const prices = points.map(p=>p[1]);
-  const min = Math.min(...prices);
-  const max = Math.max(...prices);
-  const range = (max - min) || 1;
-  const W = 600, H = 70, PAD = 4;
-
-  const coords = points.map((p,i)=>{
-    const x = (i / (points.length - 1)) * W;
-    const y = H - PAD - ((p[1] - min) / range) * (H - PAD*2);
-    return [x,y];
-  });
-
-  const linePath = coords.map((c,i)=> (i===0?'M':'L') + c[0].toFixed(1) + ',' + c[1].toFixed(1)).join(' ');
-  const areaPath = linePath + ` L${W},${H} L0,${H} Z`;
-  const up = prices[prices.length-1] >= prices[0];
-  const styles = getComputedStyle(document.documentElement);
-  const stroke = (up ? styles.getPropertyValue('--up') : styles.getPropertyValue('--down')).trim();
-  const upColor = styles.getPropertyValue('--up').trim();
-  const downColor = styles.getPropertyValue('--down').trim();
-
-  let maxIdx = 0, minIdx = 0;
-  prices.forEach((p,i)=>{ if(p > prices[maxIdx]) maxIdx = i; if(p < prices[minIdx]) minIdx = i; });
-
-  svg.innerHTML = `
-    <defs>
-      <linearGradient id="sparkFill" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0%" stop-color="${stroke}" stop-opacity="0.28"/>
-        <stop offset="100%" stop-color="${stroke}" stop-opacity="0"/>
-      </linearGradient>
-    </defs>
-    <path d="${areaPath}" fill="url(#sparkFill)" stroke="none"/>
-    <path d="${linePath}" fill="none" stroke="${stroke}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
-    <circle cx="${coords[maxIdx][0].toFixed(1)}" cy="${coords[maxIdx][1].toFixed(1)}" r="4" fill="${upColor}" stroke="${styles.getPropertyValue('--panel').trim()}" stroke-width="1.5"/>
-    <circle cx="${coords[minIdx][0].toFixed(1)}" cy="${coords[minIdx][1].toFixed(1)}" r="4" fill="${downColor}" stroke="${styles.getPropertyValue('--panel').trim()}" stroke-width="1.5"/>
-  `;
-
-  maxLabel.textContent = fmtMoney(max, settings.currency);
-  maxLabel.style.left = ((coords[maxIdx][0]/W)*100) + '%';
-  maxLabel.style.top = ((coords[maxIdx][1]/H)*100) + '%';
-  maxLabel.classList.add('show');
-
-  minLabel.textContent = fmtMoney(min, settings.currency);
-  minLabel.style.left = ((coords[minIdx][0]/W)*100) + '%';
-  minLabel.style.top = ((coords[minIdx][1]/H)*100) + '%';
-  minLabel.classList.add('show');
-
-  const label = RANGE_LABEL[settings.chartRange] || '24H';
-  document.getElementById('sparkLabel').textContent =
-    `${label} RANGE  ·  LOW ${fmtMoney(min, settings.currency)}  ·  HIGH ${fmtMoney(max, settings.currency)}`;
-}
-
-// ---------- fetch + refresh ----------
-async function fetchWithTimeout(url, ms){
-  document.getElementById('heroSub').textContent = 'DBG: fetchWithTimeout called';
-  const controller = new AbortController();
-  const timer = setTimeout(()=> controller.abort(), ms);
-  try{
-    document.getElementById('heroSub').textContent = 'DBG: calling fetch()...';
-    const res = await fetch(url, { signal: controller.signal });
-    document.getElementById('heroSub').textContent = 'DBG: fetch resolved, status ' + res.status;
-    return res;
-  }finally{
-    clearTimeout(timer);
-  }
-}
-
-async function fetchCrypto(){
-  document.getElementById('heroSub').textContent = 'DBG: fetchCrypto started';
-  const vs = settings.currency;
-  let url = `https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=${vs}&include_24hr_change=true&precision=2`;
-  if(settings.cgApiKey) url += `&x_cg_demo_api_key=${encodeURIComponent(settings.cgApiKey)}`;
-  let res;
-  try{
-    res = await fetchWithTimeout(url, 8000);
-  }catch(e){
-    if(e.name === 'AbortError') throw new Error('request timed out after 8s — network may be blocked or very slow');
-    throw new Error('network error: ' + e.message);
-  }
-  document.getElementById('heroSub').textContent = 'DBG: got response, checking ok...';
-  if(!res.ok) throw new Error((res.status === 429 ? 'rate-limited ' : 'coingecko ') + res.status);
-  document.getElementById('heroSub').textContent = 'DBG: parsing json...';
-  const json = await res.json();
-  document.getElementById('heroSub').textContent = 'DBG: json parsed ok';
-  return json;
-}
-
-async function refreshAll(){
-  document.getElementById('heroSub').textContent = 'DBG: refreshAll started';
+// simple direct price update — no per-character animation, no resize loop
+async function tick(){
   const dot = document.getElementById('statusDot');
-  let ok = false;
   try{
-    const data = await fetchCrypto();
-    document.getElementById('heroSub').textContent = 'DBG: calling applyCrypto...';
-    applyCrypto(data);
-    ok = true;
-  }catch(e){
-    console.error('crypto fetch failed:', e.message || e);
-    dot.className = 'dot err';
-    showBanner('BTC price error: ' + (e.message || 'unknown') + '. Check the CoinGecko key in settings, or try removing it to test the free tier.');
-  }
-  if(ok){
+    const vs = settings.currency;
+    let url = `https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=${vs}&include_24hr_change=true&precision=2`;
+    if(settings.cgApiKey) url += `&x_cg_demo_api_key=${encodeURIComponent(settings.cgApiKey)}`;
+    const res = await fetch(url);
+    if(!res.ok) throw new Error((res.status===429?'rate-limited ':'coingecko ') + res.status);
+    const data = await res.json();
+    const btc = data.bitcoin;
+    if(!btc || btc[vs]===undefined) throw new Error('unexpected response: ' + JSON.stringify(data).slice(0,100));
+
+    document.getElementById('heroLabel').textContent = 'BTC / ' + vs.toUpperCase();
+    document.getElementById('heroPrice').textContent = fmtMoney(btc[vs], vs);
+    const chg = btc[vs+'_24h_change'];
+    const chgEl = document.getElementById('heroChange');
+    if(chg!==undefined){
+      chgEl.textContent = (chg>=0?'▲ ':'▼ ') + Math.abs(chg).toFixed(2) + '%';
+      chgEl.className = 'hero-change ' + (chg>=0?'up':'down');
+    }
+    document.getElementById('heroSub').textContent = '24h change';
+
+    if(lastSparkPoints.length){
+      lastSparkPoints[lastSparkPoints.length-1] = [Date.now(), btc[vs]];
+      drawSparkline(lastSparkPoints);
+    }
+
     dot.className = 'dot live';
     hideBanner();
+  }catch(e){
+    dot.className = 'dot err';
+    showBanner('BTC price error: ' + (e.message||'unknown'));
+    console.error(e);
   }
   document.getElementById('lastUpdated').textContent = 'Updated ' + new Date().toLocaleTimeString('en-AU',{hour12:false});
 }
 
-function applyCrypto(data){
-  const vs = settings.currency;
-  document.getElementById('heroLabel').textContent = 'BTC / ' + vs.toUpperCase();
-
-  if(data && data.status && data.status.error_message){
-    throw new Error(data.status.error_message);
-  }
-  const btc = data ? data.bitcoin : null;
-  if(!btc || btc[vs] === undefined){
-    throw new Error('unexpected response shape: ' + JSON.stringify(data).slice(0,120));
-  }
-
-  renderFlip(document.getElementById('heroPrice'), fmtMoney(btc[vs], vs));
-  const chg = btc[vs+'_24h_change'];
-  const el = document.getElementById('heroChange');
-  if(chg !== undefined){
-    el.textContent = (chg>=0?'▲ ':'▼ ') + Math.abs(chg).toFixed(2) + '%';
-    el.className = 'hero-change ' + (chg>=0?'up':'down');
-  }
-  document.getElementById('heroSub').textContent = '24h change';
-
-  if(lastSparkPoints.length){
-    const updated = lastSparkPoints.slice();
-    updated[updated.length - 1] = [Date.now(), btc[vs]];
-    lastSparkPoints = updated;
+const RANGE_LABEL = {'1':'24H','7':'7D','30':'30D','365':'1Y'};
+async function fetchSparkline(){
+  try{
+    let url = `https://api.coingecko.com/api/v3/coins/bitcoin/market_chart?vs_currency=${settings.currency}&days=${settings.chartRange}`;
+    if(settings.cgApiKey) url += `&x_cg_demo_api_key=${encodeURIComponent(settings.cgApiKey)}`;
+    const res = await fetch(url);
+    if(!res.ok) throw new Error('sparkline ' + res.status);
+    const data = await res.json();
+    let points = data.prices || [];
+    // downsample long ranges so the SVG stays cheap to redraw every tick
+    if(points.length > 150){
+      const step = Math.ceil(points.length / 150);
+      points = points.filter((_,i)=> i % step === 0);
+    }
+    lastSparkPoints = points;
     drawSparkline(lastSparkPoints);
-  }
+  }catch(e){ console.error('sparkline failed', e); }
 }
 
-// ---------- timers ----------
-function restartPriceTimer(){
-  if(priceTimer) clearInterval(priceTimer);
-  priceTimer = setInterval(refreshAll, settings.interval * 1000);
-}
-function restartSparkTimer(){
-  if(sparkTimer) clearInterval(sparkTimer);
-  sparkTimer = setInterval(fetchSparkline, 5 * 60 * 1000);
+function drawSparkline(points){
+  const svg = document.getElementById('sparkSvg');
+  if(!points || points.length < 2){ svg.innerHTML=''; return; }
+  const prices = points.map(p=>p[1]);
+  const min = Math.min(...prices), max = Math.max(...prices);
+  const range = (max-min) || 1;
+  const W=600,H=70,PAD=4;
+  const coords = points.map((p,i)=>{
+    const x = (i/(points.length-1))*W;
+    const y = H-PAD-((p[1]-min)/range)*(H-PAD*2);
+    return [x,y];
+  });
+  const linePath = coords.map((c,i)=>(i===0?'M':'L')+c[0].toFixed(1)+','+c[1].toFixed(1)).join(' ');
+  const areaPath = linePath + ` L${W},${H} L0,${H} Z`;
+  const up = prices[prices.length-1] >= prices[0];
+  const stroke = up ? 'var(--up)' : 'var(--down)';
+  svg.innerHTML = `
+    <defs><linearGradient id="sf" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="${up?'#39FF14':'#FF1E3C'}" stop-opacity="0.25"/>
+      <stop offset="100%" stop-color="${up?'#39FF14':'#FF1E3C'}" stop-opacity="0"/>
+    </linearGradient></defs>
+    <path d="${areaPath}" fill="url(#sf)" stroke="none"/>
+    <path d="${linePath}" fill="none" stroke="${stroke}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+  `;
+  const label = RANGE_LABEL[settings.chartRange] || '24H';
+  document.getElementById('sparkLabel').textContent = `${label} RANGE  ·  LOW ${fmtMoney(min,settings.currency)}  ·  HIGH ${fmtMoney(max,settings.currency)}`;
 }
 
-// ---------- wake lock ----------
+function restartPriceTimer(){ if(priceTimer) clearInterval(priceTimer); priceTimer = setInterval(tick, settings.interval*1000); }
+function restartSparkTimer(){ if(sparkTimer) clearInterval(sparkTimer); sparkTimer = setInterval(fetchSparkline, 5*60*1000); }
+
 let wakeLock = null;
-async function requestWakeLock(){
-  try{ if('wakeLock' in navigator){ wakeLock = await navigator.wakeLock.request('screen'); } }catch(e){}
-}
-document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState === 'visible') requestWakeLock(); });
+async function requestWakeLock(){ try{ if('wakeLock' in navigator) wakeLock = await navigator.wakeLock.request('screen'); }catch(e){} }
+document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState==='visible') requestWakeLock(); });
 requestWakeLock();
 
-// ---------- global error trap — nothing can fail silently anymore ----------
-function showFatalError(msg){
-  const el = document.getElementById('heroSub');
-  if(el) el.textContent = 'ERROR: ' + msg;
-  showBanner('Script error: ' + msg);
-  console.error('FATAL:', msg);
-}
-window.addEventListener('error', (e)=>{
-  showFatalError(e.message + ' (line ' + e.lineno + ')');
-});
-window.addEventListener('unhandledrejection', (e)=>{
-  showFatalError('unhandled promise rejection: ' + (e.reason && e.reason.message ? e.reason.message : e.reason));
-});
-
-// ---------- init ----------
-(function init(){
-  try{
-    console.log('init: starting');
-    loadSettings();
-    console.log('init: settings loaded', settings);
-    restartPriceTimer();
-    console.log('init: price timer started, interval=', settings.interval);
-    restartSparkTimer();
-    console.log('init: spark timer started');
-    refreshAll().then(()=> console.log('init: first refreshAll resolved')).catch(e=> showFatalError('refreshAll rejected: ' + e.message));
-    fetchSparkline().then(()=> console.log('init: first fetchSparkline resolved')).catch(e=> showFatalError('fetchSparkline rejected: ' + e.message));
-    console.log('init: complete');
-  }catch(e){
-    showFatalError('init crashed: ' + e.message);
-  }
-})();
+loadSettings();
+restartPriceTimer();
+restartSparkTimer();
+tick();
+fetchSparkline();
 </script>
 </body>
 </html>
