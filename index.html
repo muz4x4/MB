@@ -6,7 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="mobile-web-app-capable" content="yes">
-<title>Market Board</title>
+<title>BTC Board</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;700&family=Space+Grotesk:wght@400;500;600;700&family=Silkscreen:wght@400;700&display=swap');
 
@@ -32,7 +32,6 @@
     overflow:hidden;
     font-family:'Space Grotesk',sans-serif;
     -webkit-user-select:none; user-select:none;
-    transition:background .3s;
   }
 
   #app{
@@ -41,11 +40,11 @@
     padding: max(28px, env(safe-area-inset-top)) max(32px, env(safe-area-inset-right)) max(28px, env(safe-area-inset-bottom)) max(32px, env(safe-area-inset-left));
     display:flex;
     flex-direction:column;
-    gap:20px;
+    gap:16px;
+    background:transparent;
   }
 
-  /* ---------- header ---------- */
-  header{ display:flex; justify-content:space-between; align-items:center; }
+  header{ display:flex; justify-content:space-between; align-items:center; flex-shrink:0; }
   .brand{ display:flex; align-items:baseline; gap:10px; }
   .brand .mark{ font-family:'Roboto Mono',monospace; color:var(--amber); font-size:14px; letter-spacing:.18em; }
   .brand h1{ font-size:15px; letter-spacing:.28em; font-weight:600; color:var(--ink-dim); text-transform:uppercase; }
@@ -53,23 +52,25 @@
   .dot{ width:7px;height:7px;border-radius:50%; background:var(--ink-dim); transition:background .3s; }
   .dot.live{ background:var(--up); box-shadow:0 0 8px var(--up); }
   .dot.err{ background:var(--down); box-shadow:0 0 8px var(--down); }
-  .gear{ width:34px;height:34px; border-radius:50%; border:1px solid var(--line); display:flex;align-items:center;justify-content:center; color:var(--ink-dim); cursor:pointer; font-size:16px; }
+  .gear{ width:34px;height:34px; border-radius:50%; border:1px solid var(--line); display:flex;align-items:center;justify-content:center; color:var(--ink-dim); cursor:pointer; font-size:16px; flex-shrink:0; }
 
-  /* ---------- status banner ---------- */
   .banner{ display:none; align-items:center; justify-content:space-between; gap:14px; background:rgba(193,85,74,.10); border:1px solid rgba(193,85,74,.35); color:var(--down); border-radius:10px; padding:10px 16px; font-size:13px; line-height:1.5; flex-shrink:0; }
   .banner.show{ display:flex; }
   .banner button{ background:transparent; border:1px solid var(--down); color:var(--down); padding:6px 12px; font-size:12px; border-radius:6px; flex-shrink:0; }
 
-  /* ---------- hero (BTC) ---------- */
+  /* ---------- hero (BTC — the whole app now) ---------- */
   .hero{
     background:linear-gradient(180deg,var(--panel),var(--panel-2));
     border:1px solid var(--line);
     border-radius:14px;
-    padding:24px 28px;
+    padding:24px 30px;
     position:relative;
     overflow:hidden;
-    flex-shrink:0;
-    transition:flex .3s;
+    flex:1;
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+    min-height:0;
   }
   .hero-top{ display:flex; justify-content:space-between; align-items:flex-start; gap:16px; }
   .hero-label{ font-size:13px; letter-spacing:.24em; color:var(--ink-dim); text-transform:uppercase; margin-bottom:10px; }
@@ -79,11 +80,7 @@
     font-weight:700;
     letter-spacing:.04em;
     color:var(--amber);
-    background:none;
-    border-radius:0;
-    padding:0;
-    flex-shrink:0;
-    font-size:clamp(26px,6vw,60px);
+    font-size:clamp(40px,10vw,120px);
     line-height:1;
     white-space:nowrap;
     max-width:100%;
@@ -91,7 +88,7 @@
   }
   .hero-price{
     font-family:'Roboto Mono',monospace;
-    font-size:clamp(30px,7vw,64px);
+    font-size:clamp(44px,11vw,120px);
     font-weight:500;
     line-height:1;
     color:var(--ink);
@@ -104,104 +101,41 @@
   .flipchar.flip{ transform:rotateX(90deg); opacity:0; }
   .flipchar.cents{ font-size:.62em; opacity:.75; }
   .hero-right{ text-align:right; flex-shrink:0; }
-  .hero-change{ font-family:'Roboto Mono',monospace; font-size:20px; padding:6px 14px; border-radius:8px; display:inline-block; }
+  .hero-change{ font-family:'Roboto Mono',monospace; font-size:clamp(18px,2.4vw,28px); padding:6px 14px; border-radius:8px; display:inline-block; }
   .hero-change.up{ color:var(--up); background:rgba(111,169,122,.12); }
   .hero-change.down{ color:var(--down); background:rgba(193,85,74,.12); }
   .hero-sub{ margin-top:10px; font-size:13px; color:var(--ink-dim); font-family:'Roboto Mono',monospace; }
-  .spark-wrap{ margin-top:16px; height:clamp(48px,13vh,90px); transition:height .3s; flex-shrink:0; position:relative; }
+
+  .spark-wrap{ margin-top:28px; height:clamp(60px,20vh,150px); transition:height .3s; flex-shrink:0; position:relative; }
   .spark-wrap svg{ width:100%; height:100%; overflow:visible; position:relative; z-index:1; }
-  .spark-label{ font-family:'Roboto Mono',monospace; font-size:11px; color:var(--ink-dim); letter-spacing:.1em; margin-top:6px; }
+  .spark-label{ font-family:'Roboto Mono',monospace; font-size:11px; color:var(--ink-dim); letter-spacing:.1em; margin-top:8px; }
 
   .spark-callout{
-    position:absolute;
-    z-index:3;
-    background:var(--panel-2);
-    border:1px solid var(--line);
-    border-radius:6px;
-    padding:2px 7px;
-    font-family:'Roboto Mono',monospace;
-    font-size:11px;
-    color:var(--ink);
-    white-space:nowrap;
-    pointer-events:none;
-    display:none;
+    position:absolute; z-index:3;
+    background:var(--panel-2); border:1px solid var(--line); border-radius:6px;
+    padding:2px 7px; font-family:'Roboto Mono',monospace; font-size:11px; color:var(--ink);
+    white-space:nowrap; pointer-events:none; display:none;
   }
   .spark-callout.show{ display:block; }
   .spark-callout.below{ transform:translate(-50%,10px); }
-  .spark-callout.below::before{
-    content:""; position:absolute; top:-5px; left:50%; transform:translateX(-50%);
-    border-left:5px solid transparent; border-right:5px solid transparent; border-bottom:5px solid var(--line);
-  }
+  .spark-callout.below::before{ content:""; position:absolute; top:-5px; left:50%; transform:translateX(-50%); border-left:5px solid transparent; border-right:5px solid transparent; border-bottom:5px solid var(--line); }
   .spark-callout.above{ transform:translate(-50%,calc(-100% - 10px)); }
-  .spark-callout.above::before{
-    content:""; position:absolute; bottom:-5px; left:50%; transform:translateX(-50%);
-    border-left:5px solid transparent; border-right:5px solid transparent; border-top:5px solid var(--line);
-  }
-
-  /* ---------- solo mode: no secondary tickers, BTC takes the whole screen ---------- */
-  #app.solo-mode .hero{ flex:1; display:flex; flex-direction:column; justify-content:center; }
-  #app.solo-mode .hero{ min-height:0; }
-  #app.solo-mode .hero-price{ font-size:clamp(44px,11vw,120px); }
-  #app.solo-mode .ticker-badge{ font-size:clamp(40px,11vw,120px); }
-  #app.solo-mode .hero-change{ font-size:clamp(18px,2.4vw,28px); }
-  #app.solo-mode .spark-wrap{ height:clamp(60px,20vh,150px); margin-top:28px; }
-
-  /* ---------- cycle tile ---------- */
-  .cycle{ flex:1; background:var(--panel); border:1px solid var(--line); border-radius:14px; display:flex; flex-direction:column; overflow:hidden; }
-  .cycle-empty{ flex:1; display:flex; align-items:center; justify-content:center; color:var(--ink-dim); font-size:14px; text-align:center; padding:20px; line-height:1.6; }
-  .cycle-body{ flex:1; display:flex; flex-direction:column; justify-content:center; padding:20px 34px; cursor:pointer; }
-  .cycle-top{ display:flex; align-items:center; gap:10px; margin-bottom:14px; }
-  .cycle-sym{ font-family:'Roboto Mono',monospace; font-size:20px; letter-spacing:.1em; color:var(--ink); }
-  .cycle-kind{ font-size:10px; letter-spacing:.14em; color:var(--amber-dim); background:rgba(232,163,61,.08); border:1px solid var(--amber-dim); border-radius:4px; padding:2px 6px; text-transform:uppercase; }
-  .cycle-row{ display:flex; align-items:baseline; justify-content:space-between; gap:20px; min-width:0; }
-  .cycle-price{ font-family:'Roboto Mono',monospace; font-size:clamp(26px,7vw,58px); white-space:nowrap; max-width:100%; min-width:0; }
-  .cycle-chg{ font-family:'Roboto Mono',monospace; font-size:18px; padding:5px 12px; border-radius:8px; }
-  .cycle-chg.up{ color:var(--up); background:rgba(111,169,122,.12); }
-  .cycle-chg.down{ color:var(--down); background:rgba(193,85,74,.12); }
-  .cycle-stale{ opacity:.4; font-size:14px; font-family:'Roboto Mono',monospace; margin-top:6px; }
-  .dots{ display:flex; gap:6px; padding:14px 34px 18px; }
-  .dots .d{ width:6px;height:6px;border-radius:50%; background:var(--line); transition:background .3s; }
-  .dots .d.active{ background:var(--amber); }
+  .spark-callout.above::before{ content:""; position:absolute; bottom:-5px; left:50%; transform:translateX(-50%); border-left:5px solid transparent; border-right:5px solid transparent; border-top:5px solid var(--line); }
 
   footer{ display:flex; justify-content:space-between; font-family:'Roboto Mono',monospace; font-size:11px; color:var(--ink-dim); letter-spacing:.06em; flex-shrink:0; }
 
   /* ---------- overnight screen-off ---------- */
-  #app{ background:transparent; }
   #app.sleep-mode:not(.peek){ background:#000; }
   #app.sleep-mode:not(.peek) > *{ visibility:hidden; }
 
   /* ---------- LED matrix display mode ---------- */
-  #app.matrix-mode{
-    border:16px solid;
-    border-image:linear-gradient(135deg,#9a9a9a,#4a4a4a 40%,#2a2a2a 60%,#9a9a9a) 1;
-    box-shadow:inset 0 0 40px rgba(0,0,0,.7);
-  }
-  #app.matrix-mode .ticker-badge,
-  #app.matrix-mode .hero-price,
-  #app.matrix-mode .hero-change,
-  #app.matrix-mode .cycle-price,
-  #app.matrix-mode .cycle-sym,
-  #app.matrix-mode .cycle-chg,
-  #app.matrix-mode .clock{
-    font-family:'Silkscreen',monospace;
-    letter-spacing:.02em;
-  }
-  #app.matrix-mode .hero,
-  #app.matrix-mode .cycle{
-    border:none;
-    background:#000;
-    border-radius:2px;
-  }
-  #app.matrix-mode .hero::before{ content:none; }
+  #app.matrix-mode{ border:16px solid; border-image:linear-gradient(135deg,#9a9a9a,#4a4a4a 40%,#2a2a2a 60%,#9a9a9a) 1; box-shadow:inset 0 0 40px rgba(0,0,0,.7); }
+  #app.matrix-mode .ticker-badge, #app.matrix-mode .hero-price, #app.matrix-mode .hero-change, #app.matrix-mode .clock{ font-family:'Silkscreen',monospace; letter-spacing:.02em; }
+  #app.matrix-mode .hero{ border:none; background:#000; border-radius:2px; }
   #app.matrix-mode::after{
-    content:"";
-    position:fixed;
-    inset:0;
-    pointer-events:none;
-    z-index:5;
+    content:""; position:fixed; inset:0; pointer-events:none; z-index:5;
     background-image:radial-gradient(circle, rgba(0,0,0,.6) 1px, transparent 1.6px);
-    background-size:5px 5px;
-    mix-blend-mode:multiply;
+    background-size:5px 5px; mix-blend-mode:multiply;
   }
 
   /* ---------- settings drawer ---------- */
@@ -214,24 +148,15 @@
   .field label{ display:block; font-size:12px; color:var(--ink-dim); margin-bottom:8px; letter-spacing:.05em; }
   .field .hint{ font-size:11px; color:var(--ink-dim); margin-top:6px; line-height:1.5; }
   .field .hint a{ color:var(--amber); }
-  input[type=text],input[type=password],select{
+  input[type=text],input[type=password],select,input[type=time]{
     width:100%; background:var(--bg); border:1px solid var(--line); border-radius:8px; color:var(--ink);
     font-family:'Roboto Mono',monospace; font-size:14px; padding:10px 12px;
   }
   .row-add{ display:flex; gap:8px; }
-  .row-add input{ flex:1; }
   button{ font-family:'Space Grotesk',sans-serif; font-weight:600; border:none; border-radius:8px; cursor:pointer; }
-  .btn-amber{ background:var(--amber); color:#1a1410; padding:10px 16px; font-size:13px; }
   .btn-ghost{ background:transparent; border:1px solid var(--line); color:var(--ink-dim); width:100%; padding:12px; font-size:13px; margin-top:8px; }
-  .chips{ display:flex; flex-wrap:wrap; gap:8px; margin-top:10px; }
-  .chip{ display:flex; align-items:center; gap:8px; background:var(--bg); border:1px solid var(--line); border-radius:20px; padding:6px 6px 6px 12px; font-family:'Roboto Mono',monospace; font-size:13px; }
-  .chip .x{ width:18px;height:18px; border-radius:50%; background:var(--line); display:flex;align-items:center;justify-content:center; font-size:11px; cursor:pointer; color:var(--ink); }
   .save-note{ font-size:12px; color:var(--up); height:16px; margin-top:10px; }
-
-  /* theme swatch preview in dropdown */
-  .theme-preview{ display:flex; gap:8px; margin-top:10px; }
-  .swatch{ flex:1; height:34px; border-radius:8px; border:2px solid transparent; cursor:pointer; display:flex; align-items:center; justify-content:center; font-family:'Roboto Mono',monospace; font-size:10px; letter-spacing:.05em; }
-  .swatch.active{ border-color:var(--amber); }
+  .status-line{ font-size:10px; color:var(--ink-dim); letter-spacing:.05em; }
 </style>
 </head>
 <body>
@@ -240,7 +165,7 @@
   <header>
     <div class="brand">
       <span class="mark">◆</span>
-      <h1>Market Board</h1>
+      <h1>BTC Board</h1>
     </div>
     <div class="clock">
       <span class="dot" id="statusDot"></span>
@@ -276,13 +201,9 @@
     <div class="spark-label" id="sparkLabel">24H RANGE</div>
   </div>
 
-  <div class="cycle" id="cycle">
-    <div class="cycle-empty">No other tickers added yet.<br>Tap ⚙ to add crypto or stock symbols — they'll cycle here.</div>
-  </div>
-
   <footer>
     <span id="lastUpdated">Not yet updated</span>
-    <span id="buildStamp">build 2026-08-24-a</span>
+    <span id="buildStamp">build 2026-08-24-c</span>
   </footer>
 </div>
 
@@ -307,7 +228,6 @@
       <input type="checkbox" id="matrixMode" style="width:20px;height:20px;flex:0 0 auto;accent-color:var(--amber);">
       <span style="font-size:13px;color:var(--ink-dim);">LED matrix look (pixel font + dot grid + metal bezel)</span>
     </div>
-    <div class="hint">Pairs best with the LED Board palette above — recreates the physical dot-matrix ticker look on screen.</div>
   </div>
 
   <div class="field">
@@ -329,7 +249,7 @@
   </div>
 
   <div class="field">
-    <label>Refresh interval (price data)</label>
+    <label>Refresh interval</label>
     <select id="intervalSelect">
       <option value="1">Every 1 second (needs CoinGecko key)</option>
       <option value="3">Every 3 seconds (needs CoinGecko key)</option>
@@ -339,46 +259,13 @@
       <option value="60">Every 60 seconds</option>
       <option value="300">Every 5 minutes</option>
     </select>
-    <div class="hint">Without a key, CoinGecko's free tier only allows 5–15 calls/min — stick to 5s or 10s. With a Demo API key (below), your account's limit governs how fast you can safely go; 1s = 60 calls/min.</div>
+    <div class="hint">Without a key, CoinGecko's free tier only allows 5–15 calls/min — stick to 5s or 10s. With your Demo key below, 1 second is safe.</div>
   </div>
 
   <div class="field">
-    <label>CoinGecko Demo API key (optional — for faster refresh)</label>
-    <input type="password" id="cgKeyInput" placeholder="paste key here">
-    <div class="hint">Free, no cost, just a signup at <a href="https://www.coingecko.com/en/api/pricing" target="_blank">coingecko.com/api/pricing</a> → Demo plan. Raises your limit to a stable 30 calls/min, which safely supports the 3 second option.</div>
-  </div>
-
-  <div class="field">
-    <label>Cycle speed (secondary tickers)</label>
-    <select id="cycleSelect">
-      <option value="4">Every 4 seconds</option>
-      <option value="6">Every 6 seconds</option>
-      <option value="10">Every 10 seconds</option>
-    </select>
-  </div>
-
-  <div class="field">
-    <label>Twelve Data API key (for stocks)</label>
-    <input type="password" id="apiKeyInput" placeholder="paste key here">
-    <div class="hint">Free key from <a href="https://twelvedata.com/pricing" target="_blank">twelvedata.com</a> (800 requests/day, plenty for this). Crypto works without a key. Leave blank to show crypto only.</div>
-  </div>
-
-  <div class="field">
-    <label>Crypto (CoinGecko IDs — e.g. bitcoin, ethereum, solana)</label>
-    <div class="row-add">
-      <input type="text" id="cryptoInput" placeholder="e.g. ethereum">
-      <button class="btn-amber" id="addCrypto">Add</button>
-    </div>
-    <div class="chips" id="cryptoChips"></div>
-  </div>
-
-  <div class="field">
-    <label>Stocks (ticker symbol — e.g. TSLA, NVDA, GOOGL)</label>
-    <div class="row-add">
-      <input type="text" id="stockInput" placeholder="e.g. TSLA">
-      <button class="btn-amber" id="addStock">Add</button>
-    </div>
-    <div class="chips" id="stockChips"></div>
+    <label>CoinGecko Demo API key</label>
+    <input type="password" id="cgKeyInput" placeholder="paste key here" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">
+    <div class="hint">Free, no cost — sign up at <a href="https://www.coingecko.com/en/api/pricing" target="_blank">coingecko.com/api/pricing</a> → Demo plan. Saves automatically the moment you tap away from this field.</div>
   </div>
 
   <div class="field">
@@ -397,31 +284,26 @@
         <input type="time" id="sleepEnd">
       </div>
     </div>
-    <div class="hint">Handles overnight ranges fine (e.g. 21:30 → 05:30). Tap anywhere on the black screen to peek for 8 seconds. Note: this blacks out the page content but can't dim the iPad's actual backlight — the screen will still emit some light, just no numbers or motion.</div>
+    <div class="hint">Handles overnight ranges fine (e.g. 21:30 → 05:30). Tap the black screen to peek for 8 seconds. Note: this blacks out page content only — it can't dim the iPad's actual backlight.</div>
   </div>
 
-  <div class="hint" style="margin-bottom:14px;">Leave both crypto and stocks empty and BTC will take up the whole screen.</div>
-
-  <button class="btn-ghost" id="closeDrawer">Close & refresh</button>
+  <button class="btn-ghost" id="closeDrawer">Close</button>
   <div class="save-note" id="saveNote"></div>
+  <div class="status-line" id="storageStatus" style="margin-top:14px;"></div>
 </div>
 
 <script>
-const STORAGE_KEY = 'market-board-settings';
+const STORAGE_KEY = 'btc-board-settings';
 const DEFAULTS = {
   currency: 'usd',
-  interval: 60,
-  cycleSeconds: 6,
+  interval: 5,
   chartRange: '1',
   theme: 'amber',
   matrixMode: false,
   sleepEnabled: false,
   sleepStart: '21:30',
   sleepEnd: '05:30',
-  apiKey: '',
-  cgApiKey: '',
-  cryptoExtra: [],
-  stocks: []
+  cgApiKey: ''
 };
 
 const THEMES = {
@@ -446,25 +328,42 @@ function applyTheme(name){
   root.setProperty('--amber-dim', t.amberDim);
   root.setProperty('--up', t.up);
   root.setProperty('--down', t.down);
-  drawSparkline(lastSparkPoints); // redraw with new theme colours
+  drawSparkline(lastSparkPoints);
 }
 
 let settings = { ...DEFAULTS };
 let lastValues = {};
-let latestData = {};
 let priceTimer = null;
-let cycleTimer = null;
 let sparkTimer = null;
-let cycleItems = [];
-let cycleIndex = 0;
 let lastSparkPoints = [];
 
-// ---------- storage (standard browser localStorage — works once hosted, not in Claude's own preview) ----------
-function loadSettings(){
+// ---------- storage self-test — proves definitively whether persistence works on this device ----------
+function testStorage(){
   try{
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if(raw){ settings = { ...DEFAULTS, ...JSON.parse(raw) }; }
-  }catch(e){ console.error('load failed', e); }
+    localStorage.setItem('__test__','1');
+    const ok = localStorage.getItem('__test__') === '1';
+    localStorage.removeItem('__test__');
+    return ok;
+  }catch(e){ return false; }
+}
+
+function loadSettings(){
+  const works = testStorage();
+  const statusEl = document.getElementById('storageStatus');
+  if(!works){
+    statusEl.textContent = 'Storage unavailable on this device/browser (Private Browsing mode blocks it — check Safari settings). Settings will not persist between launches.';
+    statusEl.style.color = 'var(--down)';
+  }else{
+    try{
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if(raw){ settings = { ...DEFAULTS, ...JSON.parse(raw) }; }
+      statusEl.textContent = raw ? 'Storage OK — saved settings loaded.' : 'Storage OK — no saved settings yet, using defaults.';
+      statusEl.style.color = 'var(--ink-dim)';
+    }catch(e){
+      statusEl.textContent = 'Storage read failed: ' + e.message;
+      statusEl.style.color = 'var(--down)';
+    }
+  }
   hydrateDrawer();
   applyTheme(settings.theme);
   document.getElementById('app').classList.toggle('matrix-mode', settings.matrixMode);
@@ -476,51 +375,22 @@ function saveSettings(){
     const note = document.getElementById('saveNote');
     note.textContent = 'Saved';
     setTimeout(()=> note.textContent = '', 1500);
-  }catch(e){ console.error('save failed', e); }
+  }catch(e){
+    console.error('save failed', e);
+    document.getElementById('saveNote').textContent = 'Save failed: ' + e.message;
+  }
 }
 
-// ---------- drawer wiring ----------
 function hydrateDrawer(){
   document.getElementById('themeSelect').value = settings.theme;
   document.getElementById('matrixMode').checked = settings.matrixMode;
   document.getElementById('currencySelect').value = settings.currency;
   document.getElementById('rangeSelect').value = settings.chartRange;
   document.getElementById('intervalSelect').value = String(settings.interval);
-  document.getElementById('cycleSelect').value = String(settings.cycleSeconds);
-  document.getElementById('apiKeyInput').value = settings.apiKey;
   document.getElementById('cgKeyInput').value = settings.cgApiKey;
   document.getElementById('sleepEnabled').checked = settings.sleepEnabled;
   document.getElementById('sleepStart').value = settings.sleepStart;
   document.getElementById('sleepEnd').value = settings.sleepEnd;
-  renderChips();
-}
-
-function renderChips(){
-  const cWrap = document.getElementById('cryptoChips');
-  cWrap.innerHTML = '';
-  settings.cryptoExtra.forEach(id=>{
-    const chip = document.createElement('div');
-    chip.className = 'chip';
-    chip.innerHTML = `<span>${id}</span><div class="x">✕</div>`;
-    chip.querySelector('.x').onclick = ()=>{
-      settings.cryptoExtra = settings.cryptoExtra.filter(x=>x!==id);
-      renderChips(); saveSettings(); buildCycleItems(); refreshAll();
-    };
-    cWrap.appendChild(chip);
-  });
-
-  const sWrap = document.getElementById('stockChips');
-  sWrap.innerHTML = '';
-  settings.stocks.forEach(sym=>{
-    const chip = document.createElement('div');
-    chip.className = 'chip';
-    chip.innerHTML = `<span>${sym}</span><div class="x">✕</div>`;
-    chip.querySelector('.x').onclick = ()=>{
-      settings.stocks = settings.stocks.filter(x=>x!==sym);
-      renderChips(); saveSettings(); buildCycleItems(); refreshAll();
-    };
-    sWrap.appendChild(chip);
-  });
 }
 
 document.getElementById('gearBtn').onclick = ()=>{
@@ -531,83 +401,24 @@ document.getElementById('backdrop').onclick = closeDrawer;
 document.getElementById('closeDrawer').onclick = closeDrawer;
 document.getElementById('retryBtn').onclick = refreshAll;
 
-// Every setting applies itself the instant it changes — nothing waits for the
-// drawer to close, so a mistimed tap can never silently lose a change.
-document.getElementById('themeSelect').onchange = (e)=>{
-  settings.theme = e.target.value;
-  applyTheme(settings.theme);
-  saveSettings();
-};
-document.getElementById('matrixMode').onchange = (e)=>{
-  settings.matrixMode = e.target.checked;
-  document.getElementById('app').classList.toggle('matrix-mode', settings.matrixMode);
-  saveSettings();
-};
-document.getElementById('currencySelect').onchange = (e)=>{
-  settings.currency = e.target.value;
-  saveSettings();
-  refreshAll();
-  fetchSparkline();
-};
-document.getElementById('rangeSelect').onchange = (e)=>{
-  settings.chartRange = e.target.value;
-  saveSettings();
-  fetchSparkline(); // redraw the graph immediately with the new range
-};
-document.getElementById('intervalSelect').onchange = (e)=>{
-  settings.interval = parseInt(e.target.value,10);
-  saveSettings();
-  restartPriceTimer();
-};
-document.getElementById('cycleSelect').onchange = (e)=>{
-  settings.cycleSeconds = parseInt(e.target.value,10);
-  saveSettings();
-  restartCycleTimer();
-};
-document.getElementById('sleepEnabled').onchange = (e)=>{
-  settings.sleepEnabled = e.target.checked;
-  saveSettings();
-};
-document.getElementById('sleepStart').onchange = (e)=>{
-  settings.sleepStart = e.target.value || DEFAULTS.sleepStart;
-  saveSettings();
-};
-document.getElementById('sleepEnd').onchange = (e)=>{
-  settings.sleepEnd = e.target.value || DEFAULTS.sleepEnd;
-  saveSettings();
-};
-document.getElementById('apiKeyInput').addEventListener('blur', ()=>{
-  settings.apiKey = document.getElementById('apiKeyInput').value.trim();
-  saveSettings();
-});
-document.getElementById('cgKeyInput').addEventListener('blur', ()=>{
-  settings.cgApiKey = document.getElementById('cgKeyInput').value.trim();
-  saveSettings();
-});
-
 function closeDrawer(){
   document.getElementById('backdrop').classList.remove('open');
   document.getElementById('drawer').classList.remove('open');
 }
 
-document.getElementById('addCrypto').onclick = ()=>{
-  const inp = document.getElementById('cryptoInput');
-  const val = inp.value.trim().toLowerCase();
-  if(val && !settings.cryptoExtra.includes(val) && val !== 'bitcoin'){
-    settings.cryptoExtra.push(val);
-    inp.value='';
-    renderChips(); saveSettings(); buildCycleItems(); refreshAll();
-  }
-};
-document.getElementById('addStock').onclick = ()=>{
-  const inp = document.getElementById('stockInput');
-  const val = inp.value.trim().toUpperCase();
-  if(val && !settings.stocks.includes(val)){
-    settings.stocks.push(val);
-    inp.value='';
-    renderChips(); saveSettings(); buildCycleItems(); refreshAll();
-  }
-};
+// every control applies + saves itself immediately — nothing waits for the drawer to close
+document.getElementById('themeSelect').onchange = (e)=>{ settings.theme = e.target.value; applyTheme(settings.theme); saveSettings(); };
+document.getElementById('matrixMode').onchange = (e)=>{ settings.matrixMode = e.target.checked; document.getElementById('app').classList.toggle('matrix-mode', settings.matrixMode); saveSettings(); };
+document.getElementById('currencySelect').onchange = (e)=>{ settings.currency = e.target.value; saveSettings(); refreshAll(); fetchSparkline(); };
+document.getElementById('rangeSelect').onchange = (e)=>{ settings.chartRange = e.target.value; saveSettings(); fetchSparkline(); };
+document.getElementById('intervalSelect').onchange = (e)=>{ settings.interval = parseInt(e.target.value,10); saveSettings(); restartPriceTimer(); };
+document.getElementById('sleepEnabled').onchange = (e)=>{ settings.sleepEnabled = e.target.checked; saveSettings(); };
+document.getElementById('sleepStart').onchange = (e)=>{ settings.sleepStart = e.target.value || DEFAULTS.sleepStart; saveSettings(); };
+document.getElementById('sleepEnd').onchange = (e)=>{ settings.sleepEnd = e.target.value || DEFAULTS.sleepEnd; saveSettings(); };
+document.getElementById('cgKeyInput').addEventListener('blur', ()=>{
+  settings.cgApiKey = document.getElementById('cgKeyInput').value.trim();
+  saveSettings();
+});
 
 // ---------- clock ----------
 function tickClock(){
@@ -618,10 +429,7 @@ setInterval(tickClock, 1000);
 tickClock();
 
 // ---------- overnight screen-off ----------
-function timeToMinutes(str){
-  const [h,m] = str.split(':').map(Number);
-  return h*60 + m;
-}
+function timeToMinutes(str){ const [h,m] = str.split(':').map(Number); return h*60 + m; }
 function isSleepNow(){
   if(!settings.sleepEnabled) return false;
   const now = new Date();
@@ -629,52 +437,37 @@ function isSleepNow(){
   const start = timeToMinutes(settings.sleepStart);
   const end = timeToMinutes(settings.sleepEnd);
   if(start === end) return false;
-  return start < end
-    ? (nowMin >= start && nowMin < end)      // same-day range
-    : (nowMin >= start || nowMin < end);     // wraps past midnight
+  return start < end ? (nowMin >= start && nowMin < end) : (nowMin >= start || nowMin < end);
 }
-
-let peekTimer = null;
 let wasAsleep = false;
 function updateSleepState(){
   const app = document.getElementById('app');
   const asleep = isSleepNow();
   app.classList.toggle('sleep-mode', asleep);
-
   if(asleep === wasAsleep) return;
   wasAsleep = asleep;
-
   if(asleep){
-    // stop all network polling overnight — saves API quota and battery
     if(priceTimer) clearInterval(priceTimer);
     if(sparkTimer) clearInterval(sparkTimer);
-    if(cycleTimer) clearInterval(cycleTimer);
   }else{
-    // waking up — refresh immediately, then resume normal polling
     restartPriceTimer();
-    restartCycleTimer();
     restartSparkTimer();
     refreshAll();
     fetchSparkline();
     app.classList.remove('peek');
   }
 }
-function peek(){
+let peekTimer = null;
+document.getElementById('app').addEventListener('click', ()=>{
   const app = document.getElementById('app');
   if(!app.classList.contains('sleep-mode')) return;
   app.classList.add('peek');
   clearTimeout(peekTimer);
-  peekTimer = setTimeout(()=>{ document.getElementById('app').classList.remove('peek'); }, 8000);
-}
-document.getElementById('app').addEventListener('click', ()=>{
-  if(document.getElementById('app').classList.contains('sleep-mode')) peek();
+  peekTimer = setTimeout(()=>{ app.classList.remove('peek'); }, 8000);
 });
 
 // ---------- status banner ----------
-function showBanner(msg){
-  document.getElementById('bannerText').textContent = msg;
-  document.getElementById('banner').classList.add('show');
-}
+function showBanner(msg){ document.getElementById('bannerText').textContent = msg; document.getElementById('banner').classList.add('show'); }
 function hideBanner(){ document.getElementById('banner').classList.remove('show'); }
 
 // ---------- auto-fit: guarantees price/ticker text never wraps or overflows ----------
@@ -687,28 +480,17 @@ function autoFit(el){
     let size = parseFloat(getComputedStyle(el).fontSize);
     let guard = 0;
     while(el.scrollWidth > maxWidth && size > 16 && guard < 60){
-      size -= 1;
-      el.style.fontSize = size + 'px';
-      guard++;
+      size -= 1; el.style.fontSize = size + 'px'; guard++;
     }
   });
 }
-function refitAll(){
-  autoFit(document.getElementById('heroPrice'));
-  autoFit(document.getElementById('tickerBadge'));
-  autoFit(document.getElementById('cyclePrice'));
-}
-window.addEventListener('resize', refitAll);
-window.addEventListener('orientationchange', ()=> setTimeout(refitAll, 200));
+window.addEventListener('resize', ()=>{ autoFit(document.getElementById('heroPrice')); autoFit(document.getElementById('tickerBadge')); });
+window.addEventListener('orientationchange', ()=> setTimeout(()=>{ autoFit(document.getElementById('heroPrice')); autoFit(document.getElementById('tickerBadge')); }, 200));
 
 // ---------- flip render helper ----------
 function renderFlip(el, newText){
   const old = lastValues[el.id] || '';
-  if(old === newText){
-    if(!el.dataset.built) buildSpans(el, newText);
-    autoFit(el);
-    return;
-  }
+  if(old === newText){ if(!el.dataset.built) buildSpans(el, newText); autoFit(el); return; }
   lastValues[el.id] = newText;
   buildSpans(el, newText, old);
   autoFit(el);
@@ -732,110 +514,11 @@ function buildSpans(el, text, oldText){
   });
 }
 
-// ---------- money formatting ----------
 function fmtMoney(n, currency){
   if(n === null || n === undefined || isNaN(n)) return '—';
   const symbol = currency === 'usd' ? '$' : 'A$';
   const decimals = n < 10 ? 4 : 2;
   return symbol + n.toLocaleString('en-AU',{minimumFractionDigits:decimals,maximumFractionDigits:decimals});
-}
-
-// ---------- layout mode: BTC fills the screen if nothing else is configured ----------
-function updateLayoutMode(){
-  const app = document.getElementById('app');
-  const cycleWrap = document.getElementById('cycle');
-  if(cycleItems.length === 0){
-    app.classList.add('solo-mode');
-    cycleWrap.style.display = 'none';
-  }else{
-    app.classList.remove('solo-mode');
-    cycleWrap.style.display = '';
-  }
-}
-
-// ---------- cycle tile (secondary tickers) ----------
-function buildCycleItems(){
-  cycleItems = [
-    ...settings.cryptoExtra.map(c=>({type:'crypto',key:c})),
-    ...settings.stocks.map(s=>({type:'stock',key:s}))
-  ];
-  cycleIndex = 0;
-  updateLayoutMode();
-  const wrap = document.getElementById('cycle');
-  if(cycleItems.length === 0){
-    wrap.innerHTML = '<div class="cycle-empty">No other tickers added yet.<br>Tap ⚙ to add crypto or stock symbols — they\'ll cycle here.</div>';
-    return;
-  }
-  wrap.innerHTML = `
-    <div class="cycle-body" id="cycleBody">
-      <div class="cycle-top">
-        <span class="cycle-sym" id="cycleSym">—</span>
-        <span class="cycle-kind" id="cycleKind">—</span>
-      </div>
-      <div class="cycle-row">
-        <span class="cycle-price" id="cyclePrice">—</span>
-        <span class="cycle-chg" id="cycleChg">—</span>
-      </div>
-      <div class="cycle-stale" id="cycleStale"></div>
-    </div>
-    <div class="dots" id="cycleDots"></div>
-  `;
-  const dotsWrap = document.getElementById('cycleDots');
-  cycleItems.forEach((_,i)=>{
-    const d = document.createElement('div');
-    d.className = 'd' + (i===0 ? ' active' : '');
-    dotsWrap.appendChild(d);
-  });
-  document.getElementById('cycleBody').onclick = ()=>{ advanceCycle(); restartCycleTimer(); };
-  renderCycleTile();
-}
-
-function advanceCycle(){
-  if(cycleItems.length === 0) return;
-  cycleIndex = (cycleIndex + 1) % cycleItems.length;
-  renderCycleTile();
-}
-
-function renderCycleTile(){
-  if(cycleItems.length === 0) return;
-  const item = cycleItems[cycleIndex];
-  const key = item.type + '-' + item.key;
-  const data = latestData[key];
-
-  document.getElementById('cycleSym').textContent = item.key.toUpperCase();
-  document.getElementById('cycleKind').textContent = item.type === 'crypto' ? 'crypto' : 'stock';
-
-  const priceEl = document.getElementById('cyclePrice');
-  const chgEl = document.getElementById('cycleChg');
-  const staleEl = document.getElementById('cycleStale');
-
-  if(data && data.price !== null && data.price !== undefined){
-    renderFlip(priceEl, data.priceText);
-    if(data.change !== null && data.change !== undefined){
-      chgEl.textContent = (data.change>=0?'▲ ':'▼ ') + Math.abs(data.change).toFixed(2) + '%';
-      chgEl.className = 'cycle-chg ' + (data.change>=0?'up':'down');
-    }else{
-      chgEl.textContent = '';
-    }
-    staleEl.textContent = '';
-  }else{
-    priceEl.textContent = '—';
-    chgEl.textContent = '';
-    staleEl.textContent = item.type === 'stock' && !settings.apiKey
-      ? 'add a Twelve Data API key in settings'
-      : 'no data yet';
-  }
-
-  document.querySelectorAll('#cycleDots .d').forEach((d,i)=>{
-    d.classList.toggle('active', i===cycleIndex);
-  });
-}
-
-function restartCycleTimer(){
-  if(cycleTimer) clearInterval(cycleTimer);
-  if(cycleItems.length > 1){
-    cycleTimer = setInterval(advanceCycle, settings.cycleSeconds * 1000);
-  }
 }
 
 // ---------- sparkline ----------
@@ -879,7 +562,6 @@ function drawSparkline(points){
 
   const linePath = coords.map((c,i)=> (i===0?'M':'L') + c[0].toFixed(1) + ',' + c[1].toFixed(1)).join(' ');
   const areaPath = linePath + ` L${W},${H} L0,${H} Z`;
-
   const up = prices[prices.length-1] >= prices[0];
   const styles = getComputedStyle(document.documentElement);
   const stroke = (up ? styles.getPropertyValue('--up') : styles.getPropertyValue('--down')).trim();
@@ -887,10 +569,7 @@ function drawSparkline(points){
   const downColor = styles.getPropertyValue('--down').trim();
 
   let maxIdx = 0, minIdx = 0;
-  prices.forEach((p,i)=>{
-    if(p > prices[maxIdx]) maxIdx = i;
-    if(p < prices[minIdx]) minIdx = i;
-  });
+  prices.forEach((p,i)=>{ if(p > prices[maxIdx]) maxIdx = i; if(p < prices[minIdx]) minIdx = i; });
 
   svg.innerHTML = `
     <defs>
@@ -905,21 +584,14 @@ function drawSparkline(points){
     <circle cx="${coords[minIdx][0].toFixed(1)}" cy="${coords[minIdx][1].toFixed(1)}" r="4" fill="${downColor}" stroke="${styles.getPropertyValue('--panel').trim()}" stroke-width="1.5"/>
   `;
 
-  // position the price callouts as % of the container, so they track correctly
-  // regardless of the SVG's actual rendered pixel size
-  const maxXPct = (coords[maxIdx][0] / W) * 100;
-  const maxYPct = (coords[maxIdx][1] / H) * 100;
-  const minXPct = (coords[minIdx][0] / W) * 100;
-  const minYPct = (coords[minIdx][1] / H) * 100;
-
   maxLabel.textContent = fmtMoney(max, settings.currency);
-  maxLabel.style.left = maxXPct + '%';
-  maxLabel.style.top = maxYPct + '%';
+  maxLabel.style.left = ((coords[maxIdx][0]/W)*100) + '%';
+  maxLabel.style.top = ((coords[maxIdx][1]/H)*100) + '%';
   maxLabel.classList.add('show');
 
   minLabel.textContent = fmtMoney(min, settings.currency);
-  minLabel.style.left = minXPct + '%';
-  minLabel.style.top = minYPct + '%';
+  minLabel.style.left = ((coords[minIdx][0]/W)*100) + '%';
+  minLabel.style.top = ((coords[minIdx][1]/H)*100) + '%';
   minLabel.classList.add('show');
 
   const label = RANGE_LABEL[settings.chartRange] || '24H';
@@ -927,119 +599,57 @@ function drawSparkline(points){
     `${label} RANGE  ·  LOW ${fmtMoney(min, settings.currency)}  ·  HIGH ${fmtMoney(max, settings.currency)}`;
 }
 
-// ---------- fetchers ----------
+// ---------- fetch + refresh ----------
 async function fetchCrypto(){
-  const ids = ['bitcoin', ...settings.cryptoExtra];
   const vs = settings.currency;
-  let url = `https://api.coingecko.com/api/v3/simple/price?ids=${ids.join(',')}&vs_currencies=${vs}&include_24hr_change=true&precision=2`;
+  let url = `https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=${vs}&include_24hr_change=true&precision=2`;
   if(settings.cgApiKey) url += `&x_cg_demo_api_key=${settings.cgApiKey}`;
   const res = await fetch(url);
   if(!res.ok) throw new Error((res.status === 429 ? 'rate-limited ' : 'coingecko ') + res.status);
   return res.json();
 }
 
-async function fetchStocks(){
-  if(!settings.apiKey || settings.stocks.length === 0) return {};
-  const symbols = settings.stocks.join(',');
-  const url = `https://api.twelvedata.com/quote?symbol=${symbols}&apikey=${settings.apiKey}`;
-  const res = await fetch(url);
-  if(!res.ok) throw new Error('twelvedata ' + res.status);
-  const data = await res.json();
-  if(settings.stocks.length === 1) return { [settings.stocks[0]]: data };
-  return data;
-}
-
-let lastStockFetchTime = 0;
 async function refreshAll(){
   const dot = document.getElementById('statusDot');
-  let cryptoOk = false;
-
+  let ok = false;
   try{
-    const crypto = await fetchCrypto();
-    applyCrypto(crypto);
-    cryptoOk = true;
+    const data = await fetchCrypto();
+    applyCrypto(data);
+    ok = true;
   }catch(e){
     console.error('crypto fetch failed:', e.message || e);
   }
-
-  // stocks (Twelve Data) are throttled to at most once every 15s regardless
-  // of the main refresh interval, since their free tier only allows 8 calls/min
-  const now = Date.now();
-  if(now - lastStockFetchTime >= 15000){
-    lastStockFetchTime = now;
-    try{
-      const stocks = await fetchStocks();
-      applyStocks(stocks);
-    }catch(e){
-      console.error('stock fetch failed:', e.message || e);
-    }
-  }
-
-  if(cryptoOk){
+  if(ok){
     dot.className = 'dot live';
     hideBanner();
   }else{
     dot.className = 'dot err';
-    showBanner('Rate limited by CoinGecko\'s free tier — try a slower refresh interval, or add a free CoinGecko Demo API key in settings. Last known price stays on screen until the next successful update.');
+    showBanner('Rate limited or unreachable. If you\'re on the free tier, try a slower interval or add your CoinGecko Demo key in settings.');
   }
-
-  document.getElementById('lastUpdated').textContent =
-    'Updated ' + new Date().toLocaleTimeString('en-AU',{hour12:false});
-
-  renderCycleTile();
+  document.getElementById('lastUpdated').textContent = 'Updated ' + new Date().toLocaleTimeString('en-AU',{hour12:false});
 }
 
 function applyCrypto(data){
   const vs = settings.currency;
   const btc = data.bitcoin;
   document.getElementById('heroLabel').textContent = 'BTC / ' + vs.toUpperCase();
-  if(btc && btc[vs] !== undefined){
-    renderFlip(document.getElementById('heroPrice'), fmtMoney(btc[vs], vs));
-    const chg = btc[vs+'_24h_change'];
-    const el = document.getElementById('heroChange');
-    if(chg !== undefined){
-      el.textContent = (chg>=0?'▲ ':'▼ ') + Math.abs(chg).toFixed(2) + '%';
-      el.className = 'hero-change ' + (chg>=0?'up':'down');
-    }
-    document.getElementById('heroSub').textContent = '24h change';
+  if(!btc || btc[vs] === undefined) return;
 
-    // feed the live tick into the chart's most recent point, so the graph
-    // (and its high/low markers) reflect the current price immediately —
-    // not just whenever the 5-minute chart refetch happens
-    if(lastSparkPoints.length){
-      const updated = lastSparkPoints.slice();
-      updated[updated.length - 1] = [Date.now(), btc[vs]];
-      lastSparkPoints = updated;
-      drawSparkline(lastSparkPoints);
-    }
+  renderFlip(document.getElementById('heroPrice'), fmtMoney(btc[vs], vs));
+  const chg = btc[vs+'_24h_change'];
+  const el = document.getElementById('heroChange');
+  if(chg !== undefined){
+    el.textContent = (chg>=0?'▲ ':'▼ ') + Math.abs(chg).toFixed(2) + '%';
+    el.className = 'hero-change ' + (chg>=0?'up':'down');
   }
+  document.getElementById('heroSub').textContent = '24h change';
 
-  settings.cryptoExtra.forEach(id=>{
-    const d = data[id];
-    const key = 'crypto-' + id;
-    latestData[key] = (d && d[vs] !== undefined) ? {
-      price: d[vs],
-      priceText: fmtMoney(d[vs], vs),
-      change: d[vs+'_24h_change']
-    } : null;
-  });
-}
-
-function applyStocks(data){
-  settings.stocks.forEach(sym=>{
-    const d = data[sym];
-    const key = 'stock-' + sym;
-    if(d && d.close && !d.status){
-      const price = parseFloat(d.close);
-      latestData[key] = {
-        price: price,
-        priceText: '$' + price.toLocaleString('en-AU',{minimumFractionDigits:2,maximumFractionDigits:2}),
-        change: parseFloat(d.percent_change)
-      };
-    }else{
-      latestData[key] = null;
-    }
-  });
+  if(lastSparkPoints.length){
+    const updated = lastSparkPoints.slice();
+    updated[updated.length - 1] = [Date.now(), btc[vs]];
+    lastSparkPoints = updated;
+    drawSparkline(lastSparkPoints);
+  }
 }
 
 // ---------- timers ----------
@@ -1055,21 +665,15 @@ function restartSparkTimer(){
 // ---------- wake lock ----------
 let wakeLock = null;
 async function requestWakeLock(){
-  try{
-    if('wakeLock' in navigator){ wakeLock = await navigator.wakeLock.request('screen'); }
-  }catch(e){ /* not supported / denied — use Settings > Auto-Lock > Never as backup */ }
+  try{ if('wakeLock' in navigator){ wakeLock = await navigator.wakeLock.request('screen'); } }catch(e){}
 }
-document.addEventListener('visibilitychange', ()=>{
-  if(document.visibilityState === 'visible') requestWakeLock();
-});
+document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState === 'visible') requestWakeLock(); });
 requestWakeLock();
 
 // ---------- init ----------
 (function init(){
   loadSettings();
-  buildCycleItems();
   restartPriceTimer();
-  restartCycleTimer();
   restartSparkTimer();
   refreshAll();
   fetchSparkline();
