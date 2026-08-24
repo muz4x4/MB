@@ -19,6 +19,10 @@
   .price-row{ display:flex; align-items:baseline; justify-content:space-between; gap:20px; flex-wrap:nowrap; min-width:0; flex-shrink:0; }
   .ticker-badge{ font-family:'Roboto Mono',monospace; font-weight:700; letter-spacing:.02em; color:var(--amber); font-size:clamp(32px,9vw,100px); line-height:1; white-space:nowrap; flex-shrink:0; }
   .hero-price{ font-family:'Roboto Mono',monospace; font-size:clamp(32px,9vw,100px); color:var(--ink); white-space:nowrap; min-width:0; text-align:right; }
+  .change-row{ display:flex; justify-content:flex-end; flex-shrink:0; }
+  .hero-change{ font-family:'Roboto Mono',monospace; font-weight:700; font-size:clamp(16px,2.6vw,28px); margin-top:4px; }
+  .hero-change.up{ color:var(--up); }
+  .hero-change.down{ color:var(--down); }
   .hero-sub{ margin-top:10px; font-size:13px; color:var(--ink-dim); font-family:'Roboto Mono',monospace; flex-shrink:0; }
   .spark-wrap{ margin-top:14px; margin-bottom:34px; flex:1; min-height:0; position:relative; }
   .spark-wrap svg{ width:100%; height:100%; overflow:visible; position:relative; z-index:1; }
@@ -71,6 +75,7 @@
       <div class="ticker-badge">BTC</div>
       <div class="hero-price" id="heroPrice">waiting...</div>
     </div>
+    <div class="change-row"><div class="hero-change" id="heroChange"></div></div>
     <div class="hero-sub" id="heroSub"></div>
     <div class="spark-wrap">
       <svg id="sparkSvg" viewBox="0 0 600 70" preserveAspectRatio="none"></svg>
@@ -100,6 +105,7 @@
   <div class="field">
     <label>Graph timeframe</label>
     <select id="rangeSelect">
+      <option value="1h">1 Hour</option>
       <option value="1">24 Hours</option>
       <option value="7">7 Days</option>
       <option value="30">30 Days</option>
@@ -223,6 +229,9 @@ function fmtMoney(n, currency){
   return symbol + n.toLocaleString('en-AU',{minimumFractionDigits:decimals,maximumFractionDigits:decimals});
 }
 
+const RANGE_WINDOW_MS = { '1h':3600*1000, '1':86400*1000, '7':7*86400*1000, '30':30*86400*1000, '365':365*86400*1000 };
+const MAX_POINTS = 400;
+
 async function tick(){
   document.getElementById('heroSub').textContent = 'fetching...';
   try{
@@ -237,7 +246,17 @@ async function tick(){
     document.getElementById('heroSub').textContent = 'ok ' + new Date().toLocaleTimeString('en-AU',{hour12:false});
 
     if(lastSparkPoints.length){
-      lastSparkPoints[lastSparkPoints.length-1] = [Date.now(), btc[vs]];
+      // append the live tick rather than overwrite the last point, then drop
+      // anything that's aged out of the selected window — this is what makes
+      // the graph appear to drift slowly leftward as time passes
+      const now = Date.now();
+      lastSparkPoints.push([now, btc[vs]]);
+      const windowMs = RANGE_WINDOW_MS[settings.chartRange] || RANGE_WINDOW_MS['1'];
+      const cutoff = now - windowMs;
+      lastSparkPoints = lastSparkPoints.filter(p => p[0] >= cutoff);
+      if(lastSparkPoints.length > MAX_POINTS){
+        lastSparkPoints = lastSparkPoints.slice(lastSparkPoints.length - MAX_POINTS);
+      }
       drawSparkline(lastSparkPoints);
     }
   }catch(e){
@@ -248,10 +267,19 @@ async function tick(){
 
 async function fetchSparkline(){
   try{
-    let url = `https://api.coingecko.com/api/v3/coins/bitcoin/market_chart?vs_currency=${settings.currency}&days=${settings.chartRange}`;
+    let url;
+    if(settings.chartRange === '1h'){
+      const nowSec = Math.floor(Date.now()/1000);
+      const fromSec = nowSec - 3600;
+      url = `https://api.coingecko.com/api/v3/coins/bitcoin/market_chart/range?vs_currency=${settings.currency}&from=${fromSec}&to=${nowSec}&precision=2`;
+    }else{
+      url = `https://api.coingecko.com/api/v3/coins/bitcoin/market_chart?vs_currency=${settings.currency}&days=${settings.chartRange}&precision=2`;
+    }
     if(settings.cgApiKey) url += `&x_cg_demo_api_key=${encodeURIComponent(settings.cgApiKey)}`;
     const res = await fetch(url);
     const data = await res.json();
+    // full refetch resyncs to ground truth, correcting any drift the
+    // between-fetch live-append/prune approach introduces
     lastSparkPoints = data.prices || [];
     drawSparkline(lastSparkPoints);
   }catch(e){ console.error('sparkline failed', e); }
@@ -266,7 +294,11 @@ const HOUR_MS = 3600*1000;
 // 1Y → the 1st of every second month.
 function buildTickTimestamps(tMin, tMax, chartRange){
   const targets = [];
-  if(chartRange === '1'){
+  if(chartRange === '1h'){
+    const TEN_MIN = 10*60*1000;
+    let t = Math.ceil(tMin/TEN_MIN)*TEN_MIN;
+    while(t <= tMax){ targets.push(t); t += TEN_MIN; }
+  }else if(chartRange === '1'){
     const step = 6*HOUR_MS; // 6-hour spacing gives ~5 ticks across 24h
     let t = Math.ceil(tMin/HOUR_MS)*HOUR_MS;
     while(t <= tMax){ targets.push(t); t += step; }
@@ -384,7 +416,7 @@ function drawSparkline(points){
 
   svg.innerHTML = `
     <defs><linearGradient id="sf" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="${up?'#39FF14':'#FF1E3C'}" stop-opacity="0.25"/>
+      <stop offset="0%" stop-color="${up?'#39FF14':'#FF1E3C'}" stop-opacity="0.13"/>
       <stop offset="100%" stop-color="${up?'#39FF14':'#FF1E3C'}" stop-opacity="0"/>
     </linearGradient></defs>
     ${gridLines}
@@ -400,15 +432,20 @@ function drawSparkline(points){
   positionCallout(minLabel, (coords[minIdx][0]/W)*100, (coords[minIdx][1]/H)*100, 'below');
   minLabel.classList.add('show');
 
-  const rangeLabels = {'1':'24H','7':'7D','30':'30D','365':'1Y'};
+  const rangeLabels = {'1h':'1H','1':'24H','7':'7D','30':'30D','365':'1Y'};
   document.getElementById('sparkLabel').textContent = `${rangeLabels[settings.chartRange]||'24H'}  ·  LOW ${fmtMoney(min,settings.currency)}  ·  HIGH ${fmtMoney(max,settings.currency)}`;
+
+  const changePct = ((prices[prices.length-1] - prices[0]) / prices[0]) * 100;
+  const changeEl = document.getElementById('heroChange');
+  changeEl.textContent = (changePct>=0 ? '▲ ' : '▼ ') + Math.abs(changePct).toFixed(2) + '%';
+  changeEl.className = 'hero-change ' + (changePct>=0 ? 'up' : 'down');
 
   drawXAxis(points, tickIndices);
 }
 
 function formatXAxisTick(ts, chartRange){
   const d = new Date(ts);
-  if(chartRange === '1'){
+  if(chartRange === '1h' || chartRange === '1'){
     return d.toLocaleTimeString('en-AU', { hour:'2-digit', minute:'2-digit', hour12:false });
   }else if(chartRange === '7'){
     return d.toLocaleDateString('en-AU', { weekday:'short' });
