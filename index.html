@@ -203,7 +203,7 @@
 
   <footer>
     <span id="lastUpdated">Not yet updated</span>
-    <span id="buildStamp">build 2026-08-24-f</span>
+    <span id="buildStamp">build 2026-08-24-g (debug)</span>
   </footer>
 </div>
 
@@ -692,13 +692,36 @@ async function requestWakeLock(){
 document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState === 'visible') requestWakeLock(); });
 requestWakeLock();
 
+// ---------- global error trap — nothing can fail silently anymore ----------
+function showFatalError(msg){
+  const el = document.getElementById('heroSub');
+  if(el) el.textContent = 'ERROR: ' + msg;
+  showBanner('Script error: ' + msg);
+  console.error('FATAL:', msg);
+}
+window.addEventListener('error', (e)=>{
+  showFatalError(e.message + ' (line ' + e.lineno + ')');
+});
+window.addEventListener('unhandledrejection', (e)=>{
+  showFatalError('unhandled promise rejection: ' + (e.reason && e.reason.message ? e.reason.message : e.reason));
+});
+
 // ---------- init ----------
 (function init(){
-  loadSettings();
-  restartPriceTimer();
-  restartSparkTimer();
-  refreshAll();
-  fetchSparkline();
+  try{
+    console.log('init: starting');
+    loadSettings();
+    console.log('init: settings loaded', settings);
+    restartPriceTimer();
+    console.log('init: price timer started, interval=', settings.interval);
+    restartSparkTimer();
+    console.log('init: spark timer started');
+    refreshAll().then(()=> console.log('init: first refreshAll resolved')).catch(e=> showFatalError('refreshAll rejected: ' + e.message));
+    fetchSparkline().then(()=> console.log('init: first fetchSparkline resolved')).catch(e=> showFatalError('fetchSparkline rejected: ' + e.message));
+    console.log('init: complete');
+  }catch(e){
+    showFatalError('init crashed: ' + e.message);
+  }
 })();
 </script>
 </body>
