@@ -102,14 +102,41 @@
   }
   .flipchar{ display:inline-block; transition:transform .22s ease, opacity .22s ease; transform-origin:50% 60%; }
   .flipchar.flip{ transform:rotateX(90deg); opacity:0; }
+  .flipchar.cents{ font-size:.62em; opacity:.75; }
   .hero-right{ text-align:right; flex-shrink:0; }
   .hero-change{ font-family:'DM Mono',monospace; font-size:20px; padding:6px 14px; border-radius:8px; display:inline-block; }
   .hero-change.up{ color:var(--up); background:rgba(111,169,122,.12); }
   .hero-change.down{ color:var(--down); background:rgba(193,85,74,.12); }
   .hero-sub{ margin-top:10px; font-size:13px; color:var(--ink-dim); font-family:'DM Mono',monospace; }
-  .spark-wrap{ margin-top:16px; height:clamp(48px,13vh,90px); transition:height .3s; flex-shrink:0; }
-  .spark-wrap svg{ width:100%; height:100%; overflow:visible; }
+  .spark-wrap{ margin-top:16px; height:clamp(48px,13vh,90px); transition:height .3s; flex-shrink:0; position:relative; }
+  .spark-wrap svg{ width:100%; height:100%; overflow:visible; position:relative; z-index:1; }
   .spark-label{ font-family:'DM Mono',monospace; font-size:11px; color:var(--ink-dim); letter-spacing:.1em; margin-top:6px; }
+
+  .spark-callout{
+    position:absolute;
+    z-index:3;
+    background:var(--panel-2);
+    border:1px solid var(--line);
+    border-radius:6px;
+    padding:2px 7px;
+    font-family:'DM Mono',monospace;
+    font-size:11px;
+    color:var(--ink);
+    white-space:nowrap;
+    pointer-events:none;
+    display:none;
+  }
+  .spark-callout.show{ display:block; }
+  .spark-callout.below{ transform:translate(-50%,10px); }
+  .spark-callout.below::before{
+    content:""; position:absolute; top:-5px; left:50%; transform:translateX(-50%);
+    border-left:5px solid transparent; border-right:5px solid transparent; border-bottom:5px solid var(--line);
+  }
+  .spark-callout.above{ transform:translate(-50%,calc(-100% - 10px)); }
+  .spark-callout.above::before{
+    content:""; position:absolute; bottom:-5px; left:50%; transform:translateX(-50%);
+    border-left:5px solid transparent; border-right:5px solid transparent; border-top:5px solid var(--line);
+  }
 
   /* ---------- solo mode: no secondary tickers, BTC takes the whole screen ---------- */
   #app.solo-mode .hero{ flex:1; display:flex; flex-direction:column; justify-content:center; }
@@ -241,7 +268,11 @@
         <div class="hero-sub" id="heroSub">waiting for data…</div>
       </div>
     </div>
-    <div class="spark-wrap"><svg id="sparkSvg" viewBox="0 0 600 70" preserveAspectRatio="none"></svg></div>
+    <div class="spark-wrap">
+      <svg id="sparkSvg" viewBox="0 0 600 70" preserveAspectRatio="none"></svg>
+      <div class="spark-callout below" id="sparkMaxLabel"></div>
+      <div class="spark-callout above" id="sparkMinLabel"></div>
+    </div>
     <div class="spark-label" id="sparkLabel">24H RANGE</div>
   </div>
 
@@ -300,14 +331,15 @@
   <div class="field">
     <label>Refresh interval (price data)</label>
     <select id="intervalSelect">
-      <option value="3">Every 3 seconds (needs CoinGecko key below)</option>
+      <option value="1">Every 1 second (needs CoinGecko key)</option>
+      <option value="3">Every 3 seconds (needs CoinGecko key)</option>
       <option value="5">Every 5 seconds</option>
       <option value="10">Every 10 seconds</option>
       <option value="30">Every 30 seconds</option>
       <option value="60">Every 60 seconds</option>
       <option value="300">Every 5 minutes</option>
     </select>
-    <div class="hint">CoinGecko's free unauthenticated tier only allows 5–15 calls/min — fine for 5s or 10s, but 3s will get occasional rate-limit errors unless you add a free key below.</div>
+    <div class="hint">Without a key, CoinGecko's free tier only allows 5–15 calls/min — stick to 5s or 10s. With a Demo API key (below), your account's limit governs how fast you can safely go; 1s = 60 calls/min.</div>
   </div>
 
   <div class="field">
@@ -505,6 +537,15 @@ document.getElementById('matrixMode').onchange = (e)=>{
   document.getElementById('app').classList.toggle('matrix-mode', e.target.checked);
 };
 
+document.getElementById('apiKeyInput').addEventListener('blur', ()=>{
+  settings.apiKey = document.getElementById('apiKeyInput').value.trim();
+  saveSettings();
+});
+document.getElementById('cgKeyInput').addEventListener('blur', ()=>{
+  settings.cgApiKey = document.getElementById('cgKeyInput').value.trim();
+  saveSettings();
+});
+
 function closeDrawer(){
   document.getElementById('backdrop').classList.remove('open');
   document.getElementById('drawer').classList.remove('open');
@@ -658,10 +699,12 @@ function buildSpans(el, text, oldText){
   el.dataset.built = '1';
   const chars = text.split('');
   const oldChars = (oldText||'').split('');
+  const dotIndex = text.indexOf('.');
   el.innerHTML = '';
   chars.forEach((ch,i)=>{
     const span = document.createElement('span');
     span.className = 'flipchar';
+    if(dotIndex !== -1 && i > dotIndex) span.classList.add('cents');
     span.textContent = ch;
     el.appendChild(span);
     if(oldText !== undefined && oldChars[i] !== ch){
@@ -796,7 +839,14 @@ async function fetchSparkline(){
 
 function drawSparkline(points){
   const svg = document.getElementById('sparkSvg');
-  if(!points || points.length < 2){ svg.innerHTML = ''; return; }
+  const maxLabel = document.getElementById('sparkMaxLabel');
+  const minLabel = document.getElementById('sparkMinLabel');
+  if(!points || points.length < 2){
+    svg.innerHTML = '';
+    maxLabel.classList.remove('show');
+    minLabel.classList.remove('show');
+    return;
+  }
   const prices = points.map(p=>p[1]);
   const min = Math.min(...prices);
   const max = Math.max(...prices);
@@ -815,6 +865,14 @@ function drawSparkline(points){
   const up = prices[prices.length-1] >= prices[0];
   const styles = getComputedStyle(document.documentElement);
   const stroke = (up ? styles.getPropertyValue('--up') : styles.getPropertyValue('--down')).trim();
+  const upColor = styles.getPropertyValue('--up').trim();
+  const downColor = styles.getPropertyValue('--down').trim();
+
+  let maxIdx = 0, minIdx = 0;
+  prices.forEach((p,i)=>{
+    if(p > prices[maxIdx]) maxIdx = i;
+    if(p < prices[minIdx]) minIdx = i;
+  });
 
   svg.innerHTML = `
     <defs>
@@ -825,7 +883,26 @@ function drawSparkline(points){
     </defs>
     <path d="${areaPath}" fill="url(#sparkFill)" stroke="none"/>
     <path d="${linePath}" fill="none" stroke="${stroke}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+    <circle cx="${coords[maxIdx][0].toFixed(1)}" cy="${coords[maxIdx][1].toFixed(1)}" r="4" fill="${upColor}" stroke="${styles.getPropertyValue('--panel').trim()}" stroke-width="1.5"/>
+    <circle cx="${coords[minIdx][0].toFixed(1)}" cy="${coords[minIdx][1].toFixed(1)}" r="4" fill="${downColor}" stroke="${styles.getPropertyValue('--panel').trim()}" stroke-width="1.5"/>
   `;
+
+  // position the price callouts as % of the container, so they track correctly
+  // regardless of the SVG's actual rendered pixel size
+  const maxXPct = (coords[maxIdx][0] / W) * 100;
+  const maxYPct = (coords[maxIdx][1] / H) * 100;
+  const minXPct = (coords[minIdx][0] / W) * 100;
+  const minYPct = (coords[minIdx][1] / H) * 100;
+
+  maxLabel.textContent = fmtMoney(max, settings.currency);
+  maxLabel.style.left = maxXPct + '%';
+  maxLabel.style.top = maxYPct + '%';
+  maxLabel.classList.add('show');
+
+  minLabel.textContent = fmtMoney(min, settings.currency);
+  minLabel.style.left = minXPct + '%';
+  minLabel.style.top = minYPct + '%';
+  minLabel.classList.add('show');
 
   const label = RANGE_LABEL[settings.chartRange] || '24H';
   document.getElementById('sparkLabel').textContent =
@@ -854,6 +931,7 @@ async function fetchStocks(){
   return data;
 }
 
+let lastStockFetchTime = 0;
 async function refreshAll(){
   const dot = document.getElementById('statusDot');
   let cryptoOk = false;
@@ -866,11 +944,17 @@ async function refreshAll(){
     console.error('crypto fetch failed:', e.message || e);
   }
 
-  try{
-    const stocks = await fetchStocks();
-    applyStocks(stocks);
-  }catch(e){
-    console.error('stock fetch failed:', e.message || e);
+  // stocks (Twelve Data) are throttled to at most once every 15s regardless
+  // of the main refresh interval, since their free tier only allows 8 calls/min
+  const now = Date.now();
+  if(now - lastStockFetchTime >= 15000){
+    lastStockFetchTime = now;
+    try{
+      const stocks = await fetchStocks();
+      applyStocks(stocks);
+    }catch(e){
+      console.error('stock fetch failed:', e.message || e);
+    }
   }
 
   if(cryptoOk){
@@ -900,6 +984,16 @@ function applyCrypto(data){
       el.className = 'hero-change ' + (chg>=0?'up':'down');
     }
     document.getElementById('heroSub').textContent = '24h change';
+
+    // feed the live tick into the chart's most recent point, so the graph
+    // (and its high/low markers) reflect the current price immediately —
+    // not just whenever the 5-minute chart refetch happens
+    if(lastSparkPoints.length){
+      const updated = lastSparkPoints.slice();
+      updated[updated.length - 1] = [Date.now(), btc[vs]];
+      lastSparkPoints = updated;
+      drawSparkline(lastSparkPoints);
+    }
   }
 
   settings.cryptoExtra.forEach(id=>{
