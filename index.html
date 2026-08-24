@@ -11,7 +11,7 @@
   :root{ --bg:#000; --panel:#050505; --line:#1A1A1A; --ink:#FFD400; --ink-dim:#5A5A5A; --amber:#2DA6FF; --up:#39FF14; --down:#FF1E3C; }
   *{ box-sizing:border-box; margin:0; padding:0; }
   html,body{ height:100%; background:var(--bg); color:var(--ink); overflow:hidden; font-family:'Space Grotesk',sans-serif; }
-  #app{ height:100vh; width:100vw; padding:8px 32px 16px 32px; display:flex; flex-direction:column; gap:8px; }
+  #app{ height:100vh; width:100vw; padding: max(8px, env(safe-area-inset-top)) max(32px, env(safe-area-inset-right)) max(28px, env(safe-area-inset-bottom)) max(32px, env(safe-area-inset-left)); display:flex; flex-direction:column; gap:8px; }
   header{ display:flex; justify-content:flex-end; align-items:center; flex-shrink:0; }
   .clock{ font-family:'Roboto Mono',monospace; font-size:14px; color:var(--ink-dim); display:flex; align-items:center; gap:16px; }
   .gear{ display:flex;align-items:center;justify-content:center; color:var(--ink-dim); cursor:pointer; font-size:34px; flex-shrink:0; padding:10px; }
@@ -258,30 +258,54 @@ async function fetchSparkline(){
 }
 
 const TICK_COUNT = 5;
+const DAY_MS = 24*3600*1000;
+const HOUR_MS = 3600*1000;
 
-// For 24H, ticks land exactly on the hour (local time). Other ranges use
-// evenly-spaced data points, which is already how they naturally fall.
-function getTickIndices(points, chartRange, count){
-  const len = points.length;
+// Every timeframe's ticks land on a meaningful calendar boundary in local
+// time: 24H → exact hours, 7D → midnight each day, 30D → Monday midnights,
+// 1Y → the 1st of every second month.
+function buildTickTimestamps(tMin, tMax, chartRange){
+  const targets = [];
   if(chartRange === '1'){
-    const tMin = points[0][0], tMax = points[len-1][0];
-    const HOUR = 3600*1000;
-    const stepMs = 6*HOUR; // 6-hour spacing gives ~5 ticks across 24h
-    let t = Math.ceil(tMin/HOUR)*HOUR; // next exact hour boundary (local hour == UTC hour boundary for whole-hour AU offsets)
-    const targets = [];
-    while(t <= tMax){ targets.push(t); t += stepMs; }
-    if(targets.length < 2) targets.push(tMax);
-    const idxSet = new Set();
-    targets.forEach(target=>{
-      let bestIdx = 0, bestDiff = Infinity;
-      points.forEach((p,i)=>{ const diff = Math.abs(p[0]-target); if(diff < bestDiff){ bestDiff = diff; bestIdx = i; } });
-      idxSet.add(bestIdx);
-    });
-    return Array.from(idxSet).sort((a,b)=>a-b);
+    const step = 6*HOUR_MS; // 6-hour spacing gives ~5 ticks across 24h
+    let t = Math.ceil(tMin/HOUR_MS)*HOUR_MS;
+    while(t <= tMax){ targets.push(t); t += step; }
+  }else if(chartRange === '7'){
+    let d = new Date(tMin); d.setHours(0,0,0,0);
+    let t = d.getTime();
+    if(t < tMin) t += DAY_MS;
+    while(t <= tMax){ targets.push(t); t += DAY_MS; }
+  }else if(chartRange === '30'){
+    let d = new Date(tMin); d.setHours(0,0,0,0);
+    const day = d.getDay(); // 0=Sun,1=Mon,...6=Sat
+    const daysUntilMonday = (8 - day) % 7;
+    d.setDate(d.getDate() + daysUntilMonday);
+    let t = d.getTime();
+    while(t <= tMax){ targets.push(t); t += 7*DAY_MS; }
+  }else{
+    let d = new Date(tMin); d.setDate(1); d.setHours(0,0,0,0);
+    if(d.getTime() < tMin) d.setMonth(d.getMonth()+1);
+    let t = d.getTime();
+    while(t <= tMax){
+      targets.push(t);
+      const nd = new Date(t); nd.setMonth(nd.getMonth()+2); nd.setDate(1); nd.setHours(0,0,0,0);
+      t = nd.getTime();
+    }
   }
-  const arr = [];
-  for(let i=0; i<count; i++) arr.push(Math.round((i/(count-1)) * (len-1)));
-  return arr;
+  if(targets.length === 0) targets.push(tMax);
+  return targets;
+}
+
+function getTickIndices(points, chartRange){
+  const tMin = points[0][0], tMax = points[points.length-1][0];
+  const targets = buildTickTimestamps(tMin, tMax, chartRange);
+  const idxSet = new Set();
+  targets.forEach(target=>{
+    let bestIdx = 0, bestDiff = Infinity;
+    points.forEach((p,i)=>{ const diff = Math.abs(p[0]-target); if(diff < bestDiff){ bestDiff = diff; bestIdx = i; } });
+    idxSet.add(bestIdx);
+  });
+  return Array.from(idxSet).sort((a,b)=>a-b);
 }
 
 function positionCallout(el, xPct, yPct, side){
@@ -290,22 +314,35 @@ function positionCallout(el, xPct, yPct, side){
   el.classList.add(side);
   el.style.left = xPct + '%';
   el.style.top = yPct + '%';
+  // start centered; corrected precisely below once the element has real dimensions
+  el.style.transform = `translate(-50%, ${side === 'below' ? '10px' : 'calc(-100% - 10px)'})`;
+  el.style.setProperty('--arrow-left', '50%');
 
-  const EDGE = 12; // % from each side where the bubble would otherwise clip off-screen
-  let xTranslate, arrowLeft;
-  if(xPct < EDGE){
-    xTranslate = '0%';      // anchor bubble's left edge exactly at the point
-    arrowLeft = '14px';     // pointer sits near the bubble's left edge, at the true point
-  }else if(xPct > 100-EDGE){
-    xTranslate = '-100%';   // anchor bubble's right edge exactly at the point
-    arrowLeft = 'calc(100% - 14px)';
-  }else{
-    xTranslate = '-50%';    // centered, as before
-    arrowLeft = '50%';
-  }
-  const yTranslate = side === 'below' ? '10px' : 'calc(-100% - 10px)';
-  el.style.transform = `translate(${xTranslate}, ${yTranslate})`;
-  el.style.setProperty('--arrow-left', arrowLeft);
+  requestAnimationFrame(()=>{
+    const container = el.parentElement;
+    if(!container) return;
+    const containerRect = container.getBoundingClientRect();
+    const targetX = containerRect.left + (xPct/100) * containerRect.width; // exact pixel position of the data point
+    const bubbleWidth = el.getBoundingClientRect().width;
+    const margin = 6;
+    let bubbleLeft = targetX - bubbleWidth/2; // default: centered on the point
+    const minLeft = containerRect.left + margin;
+    const maxLeft = containerRect.left + containerRect.width - bubbleWidth - margin;
+    if(bubbleLeft < minLeft) bubbleLeft = minLeft;
+    if(bubbleLeft > maxLeft) bubbleLeft = maxLeft;
+
+    const leftPx = bubbleLeft - containerRect.left;
+    el.style.left = leftPx + 'px';
+    el.style.transform = `translate(0, ${side === 'below' ? '10px' : 'calc(-100% - 10px)'})`;
+
+    // arrow sits at the true point's position within the bubble, clamped
+    // so it never renders outside the bubble's rounded corners
+    let arrowOffset = targetX - bubbleLeft;
+    const arrowMin = 12, arrowMax = bubbleWidth - 12;
+    if(arrowOffset < arrowMin) arrowOffset = arrowMin;
+    if(arrowOffset > arrowMax) arrowOffset = arrowMax;
+    el.style.setProperty('--arrow-left', arrowOffset + 'px');
+  });
 }
 
 function drawSparkline(points){
@@ -338,7 +375,7 @@ function drawSparkline(points){
   // grid lines rising from each x-axis tick position up to the price line
   // itself (not above it), so it's obvious exactly where each time label
   // lines up on the graph
-  const tickIndices = getTickIndices(points, settings.chartRange, TICK_COUNT);
+  const tickIndices = getTickIndices(points, settings.chartRange);
   const gridLines = tickIndices.map(idx=>{
     const x = coords[idx][0].toFixed(1);
     const yTop = coords[idx][1].toFixed(1);
@@ -388,14 +425,16 @@ function drawXAxis(points, tickIndices){
   const wrap = document.getElementById('xaxisWrap');
   wrap.innerHTML = '';
   if(!points || points.length < 2) return;
-  tickIndices.forEach((idx,i)=>{
+  tickIndices.forEach((idx)=>{
     const pct = (idx/(points.length-1)) * 100;
     const span = document.createElement('span');
     span.className = 'xaxis-tick';
     span.textContent = formatXAxisTick(points[idx][0], settings.chartRange);
-    if(i === 0){
+    // edge-anchor near the very ends so a label never gets clipped off-screen,
+    // otherwise centre it on its exact calendar-aligned position
+    if(pct < 4){
       span.style.left = '0%';
-    }else if(i === tickIndices.length-1){
+    }else if(pct > 96){
       span.style.right = '0%';
     }else{
       span.style.left = pct + '%';
