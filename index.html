@@ -34,9 +34,9 @@
   }
   .spark-callout.show{ display:block; }
   .spark-callout.below{ transform:translate(-50%,10px); }
-  .spark-callout.below::before{ content:""; position:absolute; top:-9px; left:50%; transform:translateX(-50%); border-left:9px solid transparent; border-right:9px solid transparent; border-bottom:9px solid var(--amber); }
+  .spark-callout.below::before{ content:""; position:absolute; top:-9px; left:var(--arrow-left,50%); transform:translateX(-50%); border-left:9px solid transparent; border-right:9px solid transparent; border-bottom:9px solid var(--amber); }
   .spark-callout.above{ transform:translate(-50%,calc(-100% - 10px)); }
-  .spark-callout.above::before{ content:""; position:absolute; bottom:-9px; left:50%; transform:translateX(-50%); border-left:9px solid transparent; border-right:9px solid transparent; border-top:9px solid var(--amber); }
+  .spark-callout.above::before{ content:""; position:absolute; bottom:-9px; left:var(--arrow-left,50%); transform:translateX(-50%); border-left:9px solid transparent; border-right:9px solid transparent; border-top:9px solid var(--amber); }
   footer{ display:flex; justify-content:space-between; font-family:'Roboto Mono',monospace; font-size:11px; color:var(--ink-dim); flex-shrink:0; }
 
   #app.sleep-mode:not(.peek){ background:#000; }
@@ -257,6 +257,37 @@ async function fetchSparkline(){
   }catch(e){ console.error('sparkline failed', e); }
 }
 
+const TICK_COUNT = 5;
+function getTickIndices(len, count){
+  const arr = [];
+  for(let i=0; i<count; i++) arr.push(Math.round((i/(count-1)) * (len-1)));
+  return arr;
+}
+
+function positionCallout(el, xPct, yPct, side){
+  // side: 'above' (high marker) or 'below' (low marker)
+  el.classList.remove('above','below');
+  el.classList.add(side);
+  el.style.left = xPct + '%';
+  el.style.top = yPct + '%';
+
+  const EDGE = 12; // % from each side where the bubble would otherwise clip off-screen
+  let xTranslate, arrowLeft;
+  if(xPct < EDGE){
+    xTranslate = '0%';      // anchor bubble's left edge exactly at the point
+    arrowLeft = '14px';     // pointer sits near the bubble's left edge, at the true point
+  }else if(xPct > 100-EDGE){
+    xTranslate = '-100%';   // anchor bubble's right edge exactly at the point
+    arrowLeft = 'calc(100% - 14px)';
+  }else{
+    xTranslate = '-50%';    // centered, as before
+    arrowLeft = '50%';
+  }
+  const yTranslate = side === 'below' ? '10px' : 'calc(-100% - 10px)';
+  el.style.transform = `translate(${xTranslate}, ${yTranslate})`;
+  el.style.setProperty('--arrow-left', arrowLeft);
+}
+
 function drawSparkline(points){
   const svg = document.getElementById('sparkSvg');
   const maxLabel = document.getElementById('sparkMaxLabel');
@@ -284,29 +315,36 @@ function drawSparkline(points){
   let maxIdx = 0, minIdx = 0;
   prices.forEach((p,i)=>{ if(p > prices[maxIdx]) maxIdx = i; if(p < prices[minIdx]) minIdx = i; });
 
+  // grid lines rising from each x-axis tick position, so it's obvious exactly
+  // where each time label lines up on the graph
+  const tickIndices = getTickIndices(points.length, TICK_COUNT);
+  const gridLines = tickIndices.map(idx=>{
+    const x = coords[idx][0].toFixed(1);
+    return `<line x1="${x}" y1="0" x2="${x}" y2="${H}" stroke="rgba(255,255,255,0.10)" stroke-width="1"/>`;
+  }).join('');
+
   svg.innerHTML = `
     <defs><linearGradient id="sf" x1="0" y1="0" x2="0" y2="1">
       <stop offset="0%" stop-color="${up?'#39FF14':'#FF1E3C'}" stop-opacity="0.25"/>
       <stop offset="100%" stop-color="${up?'#39FF14':'#FF1E3C'}" stop-opacity="0"/>
     </linearGradient></defs>
+    ${gridLines}
     <path d="${areaPath}" fill="url(#sf)" stroke="none"/>
     <path d="${linePath}" fill="none" stroke="${stroke}" stroke-width="1.3" stroke-linejoin="round" stroke-linecap="round"/>
   `;
 
   maxLabel.textContent = fmtMoney(max, settings.currency);
-  maxLabel.style.left = ((coords[maxIdx][0]/W)*100) + '%';
-  maxLabel.style.top = ((coords[maxIdx][1]/H)*100) + '%';
+  positionCallout(maxLabel, (coords[maxIdx][0]/W)*100, (coords[maxIdx][1]/H)*100, 'above');
   maxLabel.classList.add('show');
 
   minLabel.textContent = fmtMoney(min, settings.currency);
-  minLabel.style.left = ((coords[minIdx][0]/W)*100) + '%';
-  minLabel.style.top = ((coords[minIdx][1]/H)*100) + '%';
+  positionCallout(minLabel, (coords[minIdx][0]/W)*100, (coords[minIdx][1]/H)*100, 'below');
   minLabel.classList.add('show');
 
   const rangeLabels = {'1':'24H','7':'7D','30':'30D','365':'1Y'};
   document.getElementById('sparkLabel').textContent = `${rangeLabels[settings.chartRange]||'24H'}  ·  LOW ${fmtMoney(min,settings.currency)}  ·  HIGH ${fmtMoney(max,settings.currency)}`;
 
-  drawXAxis(points);
+  drawXAxis(points, tickIndices);
 }
 
 function formatXAxisTick(ts, chartRange){
@@ -322,27 +360,25 @@ function formatXAxisTick(ts, chartRange){
   }
 }
 
-function drawXAxis(points){
+function drawXAxis(points, tickIndices){
   const wrap = document.getElementById('xaxisWrap');
   wrap.innerHTML = '';
   if(!points || points.length < 2) return;
-  const tickCount = 5;
-  for(let i=0; i<tickCount; i++){
-    const idx = Math.round((i/(tickCount-1)) * (points.length-1));
+  tickIndices.forEach((idx,i)=>{
     const pct = (idx/(points.length-1)) * 100;
     const span = document.createElement('span');
     span.className = 'xaxis-tick';
     span.textContent = formatXAxisTick(points[idx][0], settings.chartRange);
     if(i === 0){
       span.style.left = '0%';
-    }else if(i === tickCount-1){
+    }else if(i === tickIndices.length-1){
       span.style.right = '0%';
     }else{
       span.style.left = pct + '%';
       span.style.transform = 'translateX(-50%)';
     }
     wrap.appendChild(span);
-  }
+  });
 }
 
 function restartPriceTimer(){
