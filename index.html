@@ -5,58 +5,24 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="mobile-web-app-capable" content="yes">
 <title>BTC Board</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;700&family=Space+Grotesk:wght@400;500;600;700&display=swap');
-
-  :root{
-    --bg: #000000;
-    --panel: #050505;
-    --panel-2: #0A0A0A;
-    --line: #1A1A1A;
-    --ink: #FFD400;
-    --ink-dim: #5A5A5A;
-    --amber: #2DA6FF;
-    --up: #39FF14;
-    --down: #FF1E3C;
-  }
-  *{ box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
-  html,body{ height:100%; background:var(--bg); color:var(--ink); overflow:hidden; font-family:'Space Grotesk',sans-serif; -webkit-user-select:none; user-select:none; }
-
-  #app{ height:100vh; width:100vw; padding: max(28px, env(safe-area-inset-top)) max(32px, env(safe-area-inset-right)) max(28px, env(safe-area-inset-bottom)) max(32px, env(safe-area-inset-left)); display:flex; flex-direction:column; gap:16px; }
-
+  :root{ --bg:#000; --panel:#050505; --line:#1A1A1A; --ink:#FFD400; --ink-dim:#5A5A5A; --amber:#2DA6FF; --up:#39FF14; --down:#FF1E3C; }
+  *{ box-sizing:border-box; margin:0; padding:0; }
+  html,body{ height:100%; background:var(--bg); color:var(--ink); overflow:hidden; font-family:'Space Grotesk',sans-serif; }
+  #app{ height:100vh; width:100vw; padding:28px 32px; display:flex; flex-direction:column; gap:16px; }
   header{ display:flex; justify-content:space-between; align-items:center; flex-shrink:0; }
-  .brand{ display:flex; align-items:baseline; gap:10px; }
-  .brand .mark{ font-family:'Roboto Mono',monospace; color:var(--amber); font-size:14px; letter-spacing:.18em; }
   .brand h1{ font-size:15px; letter-spacing:.28em; font-weight:600; color:var(--ink-dim); text-transform:uppercase; }
-  .clock{ font-family:'Roboto Mono',monospace; font-size:14px; color:var(--ink-dim); letter-spacing:.05em; display:flex; align-items:center; gap:14px; }
-  .dot{ width:7px;height:7px;border-radius:50%; background:var(--ink-dim); transition:background .3s; }
-  .dot.live{ background:var(--up); box-shadow:0 0 8px var(--up); }
-  .dot.err{ background:var(--down); box-shadow:0 0 8px var(--down); }
-  .gear{ width:34px;height:34px; border-radius:50%; border:1px solid var(--line); display:flex;align-items:center;justify-content:center; color:var(--ink-dim); cursor:pointer; font-size:16px; flex-shrink:0; }
-
-  .banner{ display:none; align-items:center; justify-content:space-between; gap:14px; background:rgba(193,85,74,.10); border:1px solid rgba(193,85,74,.35); color:var(--down); border-radius:10px; padding:10px 16px; font-size:13px; line-height:1.5; flex-shrink:0; }
-  .banner.show{ display:flex; }
-  .banner button{ background:transparent; border:1px solid var(--down); color:var(--down); padding:6px 12px; font-size:12px; border-radius:6px; flex-shrink:0; font-family:inherit; }
-
-  .hero{ background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:24px 30px; flex:1; display:flex; flex-direction:column; justify-content:center; min-height:0; }
-  .hero-top{ display:flex; justify-content:space-between; align-items:flex-start; gap:16px; }
-  .hero-label{ font-size:13px; letter-spacing:.24em; color:var(--ink-dim); text-transform:uppercase; margin-bottom:10px; }
-  .price-line{ display:flex; flex-direction:column; align-items:flex-start; gap:2px; min-width:0; }
-  .ticker-badge{ font-family:'Roboto Mono',monospace; font-weight:700; letter-spacing:.04em; color:var(--amber); font-size:clamp(36px,9vw,110px); line-height:1; white-space:nowrap; }
-  .hero-price{ font-family:'Roboto Mono',monospace; font-size:clamp(40px,10vw,110px); font-weight:500; line-height:1; color:var(--ink); letter-spacing:-.01em; white-space:nowrap; }
-  .hero-right{ text-align:right; flex-shrink:0; }
-  .hero-change{ font-family:'Roboto Mono',monospace; font-size:clamp(16px,2.2vw,26px); padding:6px 14px; border-radius:8px; display:inline-block; }
-  .hero-change.up{ color:var(--up); background:rgba(57,255,20,.10); }
-  .hero-change.down{ color:var(--down); background:rgba(255,30,60,.10); }
+  .clock{ font-family:'Roboto Mono',monospace; font-size:14px; color:var(--ink-dim); display:flex; align-items:center; gap:14px; }
+  .gear{ width:34px;height:34px; border-radius:50%; border:1px solid var(--line); display:flex;align-items:center;justify-content:center; color:var(--ink-dim); cursor:pointer; }
+  .hero{ background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:24px 30px; flex:1; display:flex; flex-direction:column; justify-content:center; }
+  .hero-price{ font-family:'Roboto Mono',monospace; font-size:clamp(40px,10vw,110px); color:var(--ink); white-space:nowrap; }
   .hero-sub{ margin-top:10px; font-size:13px; color:var(--ink-dim); font-family:'Roboto Mono',monospace; }
-
-  .spark-wrap{ margin-top:24px; height:clamp(60px,20vh,150px); position:relative; }
+  .spark-wrap{ margin-top:24px; height:clamp(60px,20vh,150px); }
   .spark-wrap svg{ width:100%; height:100%; overflow:visible; }
-  .spark-label{ font-family:'Roboto Mono',monospace; font-size:11px; color:var(--ink-dim); letter-spacing:.1em; margin-top:8px; }
-
-  footer{ display:flex; justify-content:space-between; font-family:'Roboto Mono',monospace; font-size:11px; color:var(--ink-dim); letter-spacing:.06em; flex-shrink:0; }
+  .spark-label{ font-family:'Roboto Mono',monospace; font-size:11px; color:var(--ink-dim); margin-top:8px; }
+  footer{ display:flex; justify-content:space-between; font-family:'Roboto Mono',monospace; font-size:11px; color:var(--ink-dim); flex-shrink:0; }
 
   #app.sleep-mode:not(.peek){ background:#000; }
   #app.sleep-mode:not(.peek) > *{ visibility:hidden; }
@@ -65,64 +31,42 @@
   .backdrop.open{ opacity:1; pointer-events:auto; }
   .drawer{ position:fixed; right:0; top:0; bottom:0; width:min(420px,92vw); background:var(--panel); border-left:1px solid var(--line); transform:translateX(100%); transition:transform .3s ease; z-index:11; padding:28px 26px; overflow-y:auto; }
   .drawer.open{ transform:translateX(0); }
-  .drawer h2{ font-size:13px; letter-spacing:.2em; text-transform:uppercase; color:var(--ink-dim); margin-bottom:20px; }
   .field{ margin-bottom:22px; }
-  .field label{ display:block; font-size:12px; color:var(--ink-dim); margin-bottom:8px; letter-spacing:.05em; }
+  .field label{ display:block; font-size:12px; color:var(--ink-dim); margin-bottom:8px; }
   .field .hint{ font-size:11px; color:var(--ink-dim); margin-top:6px; line-height:1.5; }
-  .field .hint a{ color:var(--amber); }
-  input[type=text],input[type=password],select,input[type=time]{ width:100%; background:var(--bg); border:1px solid var(--line); border-radius:8px; color:var(--ink); font-family:'Roboto Mono',monospace; font-size:14px; padding:10px 12px; }
+  select,input{ width:100%; background:var(--bg); border:1px solid var(--line); border-radius:8px; color:var(--ink); font-family:'Roboto Mono',monospace; font-size:14px; padding:10px 12px; }
   .row-add{ display:flex; gap:8px; align-items:center; }
   button{ font-family:'Space Grotesk',sans-serif; font-weight:600; border:none; border-radius:8px; cursor:pointer; }
-  .btn-ghost{ background:transparent; border:1px solid var(--line); color:var(--ink-dim); width:100%; padding:12px; font-size:13px; margin-top:8px; }
-  .save-note{ font-size:12px; color:var(--up); height:16px; margin-top:10px; }
-  .status-line{ font-size:10px; color:var(--ink-dim); letter-spacing:.05em; margin-top:14px; }
+  .btn-ghost{ background:transparent; border:1px solid var(--line); color:var(--ink-dim); width:100%; padding:12px; margin-top:8px; }
+  .status-line{ font-size:10px; color:var(--ink-dim); margin-top:14px; }
 </style>
 </head>
 <body>
 
 <div id="app">
   <header>
-    <div class="brand"><span class="mark">◆</span><h1>BTC Board</h1></div>
+    <div class="brand"><h1>BTC Board</h1></div>
     <div class="clock">
-      <span class="dot" id="statusDot"></span>
       <span id="clockText">--:--:--</span>
       <div class="gear" id="gearBtn">⚙</div>
     </div>
   </header>
 
-  <div class="banner" id="banner">
-    <span id="bannerText">—</span>
-    <button id="retryBtn">Retry</button>
-  </div>
-
   <div class="hero" id="hero">
-    <div class="hero-top">
-      <div>
-        <div class="hero-label" id="heroLabel">BTC / USD</div>
-        <div class="price-line">
-          <span class="ticker-badge">BTC</span>
-          <div class="hero-price" id="heroPrice">waiting...</div>
-        </div>
-      </div>
-      <div class="hero-right">
-        <div class="hero-change" id="heroChange">—</div>
-        <div class="hero-sub" id="heroSub"></div>
-      </div>
-    </div>
+    <div class="hero-price" id="heroPrice">waiting...</div>
+    <div class="hero-sub" id="heroSub"></div>
     <div class="spark-wrap"><svg id="sparkSvg" viewBox="0 0 600 70" preserveAspectRatio="none"></svg></div>
     <div class="spark-label" id="sparkLabel">24H RANGE</div>
   </div>
 
   <footer>
     <span id="lastUpdated">Not yet updated</span>
-    <span id="buildStamp">build 2026-08-24-L (sync test, no network)</span>
+    <span id="buildStamp">build 2026-08-24-final</span>
   </footer>
 </div>
 
 <div class="backdrop" id="backdrop"></div>
 <div class="drawer" id="drawer">
-  <h2>Configure Board</h2>
-
   <div class="field">
     <label>Display currency</label>
     <select id="currencySelect">
@@ -142,46 +86,45 @@
   </div>
 
   <div class="field">
-    <label>Refresh interval</label>
+    <label>Refresh interval (seconds)</label>
     <select id="intervalSelect">
-      <option value="1">Every 1 second (needs CoinGecko key)</option>
-      <option value="3">Every 3 seconds (needs CoinGecko key)</option>
-      <option value="5">Every 5 seconds</option>
-      <option value="10">Every 10 seconds</option>
-      <option value="30">Every 30 seconds</option>
-      <option value="60">Every 60 seconds</option>
+      <option value="1">1</option>
+      <option value="3">3</option>
+      <option value="5">5</option>
+      <option value="10">10</option>
+      <option value="30">30</option>
+      <option value="60">60</option>
     </select>
   </div>
 
   <div class="field">
     <label>CoinGecko Demo API key</label>
     <input type="password" id="cgKeyInput" placeholder="paste key here" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">
-    <div class="hint">Free at <a href="https://www.coingecko.com/en/api/pricing" target="_blank">coingecko.com/api/pricing</a> → Demo plan. Saves the instant you tap away.</div>
+    <div class="hint">Optional — raises your rate limit for faster refresh.</div>
   </div>
 
   <div class="field">
     <label>Overnight screen-off</label>
     <div class="row-add">
       <input type="checkbox" id="sleepEnabled" style="width:20px;height:20px;flex:0 0 auto;accent-color:var(--amber);">
-      <span style="font-size:13px;color:var(--ink-dim);">Enable scheduled screen-off</span>
+      <span style="font-size:13px;color:var(--ink-dim);">Enable</span>
     </div>
     <div class="row-add" style="margin-top:12px;">
-      <div style="flex:1;"><div class="hint" style="margin-bottom:4px;">Off at</div><input type="time" id="sleepStart"></div>
-      <div style="flex:1;"><div class="hint" style="margin-bottom:4px;">On at</div><input type="time" id="sleepEnd"></div>
+      <div style="flex:1;"><div class="hint">Off at</div><input type="time" id="sleepStart"></div>
+      <div style="flex:1;"><div class="hint">On at</div><input type="time" id="sleepEnd"></div>
     </div>
-    <div class="hint">Tap the black screen to peek for 8 seconds.</div>
   </div>
 
   <button class="btn-ghost" id="closeDrawer">Close</button>
-  <div class="save-note" id="saveNote"></div>
   <div class="status-line" id="storageStatus"></div>
 </div>
 
 <script>
-const STORAGE_KEY = 'btc-board-settings';
-const DEFAULTS = { currency:'usd', interval:5, chartRange:'1', sleepEnabled:false, sleepStart:'21:30', sleepEnd:'05:30', cgApiKey:'' };
+const STORAGE_KEY = 'btcboard-v2-settings';
+const DEFAULTS = { currency:'usd', chartRange:'1', interval:5, cgApiKey:'', sleepEnabled:false, sleepStart:'21:30', sleepEnd:'05:30' };
 let settings = { ...DEFAULTS };
-let priceTimer = null, sparkTimer = null, lastSparkPoints = [];
+let priceTimer = null;
+let lastSparkPoints = [];
 
 function testStorage(){
   try{ localStorage.setItem('__t__','1'); const ok = localStorage.getItem('__t__')==='1'; localStorage.removeItem('__t__'); return ok; }
@@ -189,13 +132,12 @@ function testStorage(){
 }
 function loadSettings(){
   const statusEl = document.getElementById('storageStatus');
-  if(!testStorage()){
-    statusEl.textContent = 'Storage unavailable (Private Browsing?) — settings will not persist.';
-  }else{
+  if(!testStorage()){ statusEl.textContent = 'Storage unavailable.'; }
+  else{
     try{
       const raw = localStorage.getItem(STORAGE_KEY);
-      if(raw) settings = { ...DEFAULTS, ...JSON.parse(raw) };
-      statusEl.textContent = raw ? 'Storage OK — settings loaded.' : 'Storage OK — using defaults.';
+      if(raw) settings = { ...settings, ...JSON.parse(raw) };
+      statusEl.textContent = raw ? 'Storage OK — loaded.' : 'Storage OK — defaults.';
     }catch(e){ statusEl.textContent = 'Storage read failed: ' + e.message; }
   }
   document.getElementById('currencySelect').value = settings.currency;
@@ -206,30 +148,26 @@ function loadSettings(){
   document.getElementById('sleepStart').value = settings.sleepStart;
   document.getElementById('sleepEnd').value = settings.sleepEnd;
 }
-function saveSettings(){
-  try{
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
-    const n = document.getElementById('saveNote'); n.textContent = 'Saved'; setTimeout(()=> n.textContent='',1500);
-  }catch(e){ document.getElementById('saveNote').textContent = 'Save failed: ' + e.message; }
-}
+function saveSettings(){ try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(settings)); }catch(e){} }
 
-document.getElementById('gearBtn').onclick = ()=>{ document.getElementById('backdrop').classList.add('open'); document.getElementById('drawer').classList.add('open'); };
+document.getElementById('gearBtn').onclick = ()=>{
+  document.getElementById('backdrop').classList.add('open');
+  document.getElementById('drawer').classList.add('open');
+};
+function closeDrawer(){
+  document.getElementById('backdrop').classList.remove('open');
+  document.getElementById('drawer').classList.remove('open');
+}
 document.getElementById('backdrop').onclick = closeDrawer;
 document.getElementById('closeDrawer').onclick = closeDrawer;
-document.getElementById('retryBtn').onclick = tick;
-function closeDrawer(){ document.getElementById('backdrop').classList.remove('open'); document.getElementById('drawer').classList.remove('open'); }
 
-document.getElementById('currencySelect').onchange = e=>{ settings.currency=e.target.value; saveSettings(); tick(); fetchSparkline(); };
-document.getElementById('rangeSelect').onchange = e=>{ settings.chartRange=e.target.value; saveSettings(); fetchSparkline(); };
-document.getElementById('intervalSelect').onchange = e=>{ settings.interval=parseInt(e.target.value,10); saveSettings(); restartPriceTimer(); };
-document.getElementById('sleepEnabled').onchange = e=>{ settings.sleepEnabled=e.target.checked; saveSettings(); };
-document.getElementById('sleepStart').onchange = e=>{ settings.sleepStart=e.target.value||DEFAULTS.sleepStart; saveSettings(); };
-document.getElementById('sleepEnd').onchange = e=>{ settings.sleepEnd=e.target.value||DEFAULTS.sleepEnd; saveSettings(); };
+document.getElementById('currencySelect').onchange = (e)=>{ settings.currency=e.target.value; saveSettings(); tick(); fetchSparkline(); };
+document.getElementById('rangeSelect').onchange = (e)=>{ settings.chartRange=e.target.value; saveSettings(); fetchSparkline(); };
+document.getElementById('intervalSelect').onchange = (e)=>{ settings.interval=parseInt(e.target.value,10); saveSettings(); restartPriceTimer(); };
+document.getElementById('sleepEnabled').onchange = (e)=>{ settings.sleepEnabled=e.target.checked; saveSettings(); };
+document.getElementById('sleepStart').onchange = (e)=>{ settings.sleepStart=e.target.value||DEFAULTS.sleepStart; saveSettings(); };
+document.getElementById('sleepEnd').onchange = (e)=>{ settings.sleepEnd=e.target.value||DEFAULTS.sleepEnd; saveSettings(); };
 document.getElementById('cgKeyInput').addEventListener('blur', ()=>{ settings.cgApiKey = document.getElementById('cgKeyInput').value.trim(); saveSettings(); });
-
-function tickClock(){ document.getElementById('clockText').textContent = new Date().toLocaleTimeString('en-AU',{hour12:false}); updateSleepState(); }
-setInterval(tickClock, 1000);
-tickClock();
 
 function timeToMinutes(s){ const [h,m]=s.split(':').map(Number); return h*60+m; }
 function isSleepNow(){
@@ -245,8 +183,8 @@ function updateSleepState(){
   app.classList.toggle('sleep-mode', asleep);
   if(asleep===wasAsleep) return;
   wasAsleep = asleep;
-  if(asleep){ if(priceTimer) clearInterval(priceTimer); if(sparkTimer) clearInterval(sparkTimer); }
-  else{ restartPriceTimer(); restartSparkTimer(); tick(); fetchSparkline(); app.classList.remove('peek'); }
+  if(asleep){ if(priceTimer) clearInterval(priceTimer); }
+  else{ restartPriceTimer(); tick(); fetchSparkline(); app.classList.remove('peek'); }
 }
 document.getElementById('app').addEventListener('click', ()=>{
   const app = document.getElementById('app');
@@ -255,8 +193,9 @@ document.getElementById('app').addEventListener('click', ()=>{
   peekTimer = setTimeout(()=> app.classList.remove('peek'), 8000);
 });
 
-function showBanner(msg){ document.getElementById('bannerText').textContent = msg; document.getElementById('banner').classList.add('show'); }
-function hideBanner(){ document.getElementById('banner').classList.remove('show'); }
+function tickClock(){ document.getElementById('clockText').textContent = new Date().toLocaleTimeString('en-AU',{hour12:false}); updateSleepState(); }
+setInterval(tickClock, 1000);
+tickClock();
 
 function fmtMoney(n, currency){
   if(n===null||n===undefined||isNaN(n)) return '—';
@@ -265,30 +204,36 @@ function fmtMoney(n, currency){
   return symbol + n.toLocaleString('en-AU',{minimumFractionDigits:decimals,maximumFractionDigits:decimals});
 }
 
-// TEMPORARY: no fetch at all — pure synchronous test of whether tick() runs and updates the DOM
 async function tick(){
-  document.title = 'TICK-CALLED-' + Date.now();
-  document.getElementById('heroPrice').textContent = 'TICK RAN ' + new Date().toLocaleTimeString('en-AU',{hour12:false});
-  document.getElementById('heroSub').textContent = 'sync test, no network involved';
-  document.getElementById('statusDot').className = 'dot live';
+  document.getElementById('heroSub').textContent = 'fetching...';
+  try{
+    const vs = settings.currency;
+    let url = `https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=${vs}&precision=2`;
+    if(settings.cgApiKey) url += `&x_cg_demo_api_key=${encodeURIComponent(settings.cgApiKey)}`;
+    const res = await fetch(url);
+    const data = await res.json();
+    const btc = data.bitcoin;
+    if(!btc || btc[vs]===undefined) throw new Error('bad response');
+    document.getElementById('heroPrice').textContent = fmtMoney(btc[vs], vs);
+    document.getElementById('heroSub').textContent = 'ok ' + new Date().toLocaleTimeString('en-AU',{hour12:false});
+
+    if(lastSparkPoints.length){
+      lastSparkPoints[lastSparkPoints.length-1] = [Date.now(), btc[vs]];
+      drawSparkline(lastSparkPoints);
+    }
+  }catch(e){
+    document.getElementById('heroSub').textContent = 'ERROR: ' + e.message;
+  }
   document.getElementById('lastUpdated').textContent = 'Updated ' + new Date().toLocaleTimeString('en-AU',{hour12:false});
 }
 
-const RANGE_LABEL = {'1':'24H','7':'7D','30':'30D','365':'1Y'};
 async function fetchSparkline(){
   try{
     let url = `https://api.coingecko.com/api/v3/coins/bitcoin/market_chart?vs_currency=${settings.currency}&days=${settings.chartRange}`;
     if(settings.cgApiKey) url += `&x_cg_demo_api_key=${encodeURIComponent(settings.cgApiKey)}`;
     const res = await fetch(url);
-    if(!res.ok) throw new Error('sparkline ' + res.status);
     const data = await res.json();
-    let points = data.prices || [];
-    // downsample long ranges so the SVG stays cheap to redraw every tick
-    if(points.length > 150){
-      const step = Math.ceil(points.length / 150);
-      points = points.filter((_,i)=> i % step === 0);
-    }
-    lastSparkPoints = points;
+    lastSparkPoints = data.prices || [];
     drawSparkline(lastSparkPoints);
   }catch(e){ console.error('sparkline failed', e); }
 }
@@ -317,37 +262,27 @@ function drawSparkline(points){
     <path d="${areaPath}" fill="url(#sf)" stroke="none"/>
     <path d="${linePath}" fill="none" stroke="${stroke}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
   `;
-  const label = RANGE_LABEL[settings.chartRange] || '24H';
-  document.getElementById('sparkLabel').textContent = `${label} RANGE  ·  LOW ${fmtMoney(min,settings.currency)}  ·  HIGH ${fmtMoney(max,settings.currency)}`;
+  const rangeLabels = {'1':'24H','7':'7D','30':'30D','365':'1Y'};
+  document.getElementById('sparkLabel').textContent = `${rangeLabels[settings.chartRange]||'24H'}  ·  LOW ${fmtMoney(min,settings.currency)}  ·  HIGH ${fmtMoney(max,settings.currency)}`;
 }
 
-function restartPriceTimer(){ if(priceTimer) clearInterval(priceTimer); priceTimer = setInterval(tick, settings.interval*1000); }
-function restartSparkTimer(){ if(sparkTimer) clearInterval(sparkTimer); sparkTimer = setInterval(fetchSparkline, 5*60*1000); }
+function restartPriceTimer(){
+  if(priceTimer) clearInterval(priceTimer);
+  priceTimer = setInterval(tick, settings.interval*1000);
+}
 
 let wakeLock = null;
-async function requestWakeLock(){ try{ if('wakeLock' in navigator) wakeLock = await navigator.wakeLock.request('screen'); }catch(e){} }
+async function requestWakeLock(){
+  try{ if('wakeLock' in navigator) wakeLock = await navigator.wakeLock.request('screen'); }
+  catch(e){}
+}
 document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState==='visible') requestWakeLock(); });
 requestWakeLock();
 
-window.addEventListener('error', (e)=>{
-  document.getElementById('heroSub').textContent = 'JS ERROR: ' + e.message + ' (line ' + e.lineno + ')';
-  document.getElementById('statusDot').className = 'dot err';
-});
-window.addEventListener('unhandledrejection', (e)=>{
-  document.getElementById('heroSub').textContent = 'PROMISE ERROR: ' + (e.reason && e.reason.message ? e.reason.message : e.reason);
-  document.getElementById('statusDot').className = 'dot err';
-});
-
-try{
-  loadSettings();
-  restartPriceTimer();
-  // restartSparkTimer();   // temporarily disabled for isolation testing
-  tick();
-  // fetchSparkline();      // temporarily disabled for isolation testing
-}catch(e){
-  document.getElementById('heroSub').textContent = 'INIT CRASH: ' + e.message;
-  document.getElementById('statusDot').className = 'dot err';
-}
+loadSettings();
+restartPriceTimer();
+tick();
+fetchSparkline();
 </script>
 </body>
 </html>
