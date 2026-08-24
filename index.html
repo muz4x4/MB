@@ -203,7 +203,7 @@
 
   <footer>
     <span id="lastUpdated">Not yet updated</span>
-    <span id="buildStamp">build 2026-08-24-g (debug)</span>
+    <span id="buildStamp">build 2026-08-24-h (debug2)</span>
   </footer>
 </div>
 
@@ -601,10 +601,13 @@ function drawSparkline(points){
 
 // ---------- fetch + refresh ----------
 async function fetchWithTimeout(url, ms){
+  document.getElementById('heroSub').textContent = 'DBG: fetchWithTimeout called';
   const controller = new AbortController();
   const timer = setTimeout(()=> controller.abort(), ms);
   try{
+    document.getElementById('heroSub').textContent = 'DBG: calling fetch()...';
     const res = await fetch(url, { signal: controller.signal });
+    document.getElementById('heroSub').textContent = 'DBG: fetch resolved, status ' + res.status;
     return res;
   }finally{
     clearTimeout(timer);
@@ -612,6 +615,7 @@ async function fetchWithTimeout(url, ms){
 }
 
 async function fetchCrypto(){
+  document.getElementById('heroSub').textContent = 'DBG: fetchCrypto started';
   const vs = settings.currency;
   let url = `https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=${vs}&include_24hr_change=true&precision=2`;
   if(settings.cgApiKey) url += `&x_cg_demo_api_key=${encodeURIComponent(settings.cgApiKey)}`;
@@ -622,15 +626,21 @@ async function fetchCrypto(){
     if(e.name === 'AbortError') throw new Error('request timed out after 8s — network may be blocked or very slow');
     throw new Error('network error: ' + e.message);
   }
+  document.getElementById('heroSub').textContent = 'DBG: got response, checking ok...';
   if(!res.ok) throw new Error((res.status === 429 ? 'rate-limited ' : 'coingecko ') + res.status);
-  return res.json();
+  document.getElementById('heroSub').textContent = 'DBG: parsing json...';
+  const json = await res.json();
+  document.getElementById('heroSub').textContent = 'DBG: json parsed ok';
+  return json;
 }
 
 async function refreshAll(){
+  document.getElementById('heroSub').textContent = 'DBG: refreshAll started';
   const dot = document.getElementById('statusDot');
   let ok = false;
   try{
     const data = await fetchCrypto();
+    document.getElementById('heroSub').textContent = 'DBG: calling applyCrypto...';
     applyCrypto(data);
     ok = true;
   }catch(e){
