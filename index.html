@@ -115,7 +115,7 @@
 
   <footer>
     <span id="lastUpdated">Not yet updated</span>
-    <span id="buildStamp">build 2026-08-24-i (rebuilt from minimal test)</span>
+    <span id="buildStamp">build 2026-08-24-k (isolation test)</span>
   </footer>
 </div>
 
@@ -268,35 +268,31 @@ function fmtMoney(n, currency){
 // simple direct price update — no per-character animation, no resize loop
 async function tick(){
   const dot = document.getElementById('statusDot');
+  document.getElementById('heroSub').textContent = 'fetching...';
   try{
-    const vs = settings.currency;
-    let url = `https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=${vs}&include_24hr_change=true&precision=2`;
-    if(settings.cgApiKey) url += `&x_cg_demo_api_key=${encodeURIComponent(settings.cgApiKey)}`;
-    const res = await fetch(url);
-    if(!res.ok) throw new Error((res.status===429?'rate-limited ':'coingecko ') + res.status);
+    const controller = new AbortController();
+    const timer = setTimeout(()=> controller.abort(), 6000);
+    const url = 'https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd';
+    let res;
+    try{
+      res = await fetch(url, { signal: controller.signal });
+    }finally{
+      clearTimeout(timer);
+    }
+    if(!res.ok) throw new Error('http ' + res.status);
     const data = await res.json();
     const btc = data.bitcoin;
-    if(!btc || btc[vs]===undefined) throw new Error('unexpected response: ' + JSON.stringify(data).slice(0,100));
+    if(!btc || btc.usd===undefined) throw new Error('bad response: ' + JSON.stringify(data).slice(0,100));
 
-    document.getElementById('heroLabel').textContent = 'BTC / ' + vs.toUpperCase();
-    document.getElementById('heroPrice').textContent = fmtMoney(btc[vs], vs);
-    const chg = btc[vs+'_24h_change'];
-    const chgEl = document.getElementById('heroChange');
-    if(chg!==undefined){
-      chgEl.textContent = (chg>=0?'▲ ':'▼ ') + Math.abs(chg).toFixed(2) + '%';
-      chgEl.className = 'hero-change ' + (chg>=0?'up':'down');
-    }
-    document.getElementById('heroSub').textContent = '24h change';
-
-    if(lastSparkPoints.length){
-      lastSparkPoints[lastSparkPoints.length-1] = [Date.now(), btc[vs]];
-      drawSparkline(lastSparkPoints);
-    }
+    document.getElementById('heroLabel').textContent = 'BTC / USD';
+    document.getElementById('heroPrice').textContent = '$' + btc.usd.toLocaleString('en-AU');
+    document.getElementById('heroSub').textContent = 'ok, last fetch ' + new Date().toLocaleTimeString('en-AU',{hour12:false});
 
     dot.className = 'dot live';
     hideBanner();
   }catch(e){
     dot.className = 'dot err';
+    document.getElementById('heroSub').textContent = 'FAILED: ' + (e.name==='AbortError' ? 'timed out after 6s' : e.message);
     showBanner('BTC price error: ' + (e.message||'unknown'));
     console.error(e);
   }
@@ -358,11 +354,25 @@ async function requestWakeLock(){ try{ if('wakeLock' in navigator) wakeLock = aw
 document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState==='visible') requestWakeLock(); });
 requestWakeLock();
 
-loadSettings();
-restartPriceTimer();
-restartSparkTimer();
-tick();
-fetchSparkline();
+window.addEventListener('error', (e)=>{
+  document.getElementById('heroSub').textContent = 'JS ERROR: ' + e.message + ' (line ' + e.lineno + ')';
+  document.getElementById('statusDot').className = 'dot err';
+});
+window.addEventListener('unhandledrejection', (e)=>{
+  document.getElementById('heroSub').textContent = 'PROMISE ERROR: ' + (e.reason && e.reason.message ? e.reason.message : e.reason);
+  document.getElementById('statusDot').className = 'dot err';
+});
+
+try{
+  loadSettings();
+  restartPriceTimer();
+  // restartSparkTimer();   // temporarily disabled for isolation testing
+  tick();
+  // fetchSparkline();      // temporarily disabled for isolation testing
+}catch(e){
+  document.getElementById('heroSub').textContent = 'INIT CRASH: ' + e.message;
+  document.getElementById('statusDot').className = 'dot err';
+}
 </script>
 </body>
 </html>
