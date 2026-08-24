@@ -16,12 +16,15 @@
   .clock{ font-family:'Roboto Mono',monospace; font-size:14px; color:var(--ink-dim); display:flex; align-items:center; gap:16px; }
   .gear{ display:flex;align-items:center;justify-content:center; color:var(--ink-dim); cursor:pointer; font-size:34px; flex-shrink:0; padding:10px; }
   .hero{ background:transparent; border:none; padding:0; flex:1; display:flex; flex-direction:column; min-height:0; }
-  .ticker-badge{ font-family:'Roboto Mono',monospace; font-weight:700; letter-spacing:.04em; color:var(--amber); font-size:clamp(32px,5.5vw,64px); line-height:1; margin-bottom:8px; flex-shrink:0; }
-  .hero-price{ font-family:'Roboto Mono',monospace; font-size:clamp(40px,9vw,100px); color:var(--ink); white-space:nowrap; flex-shrink:0; }
+  .price-row{ display:flex; align-items:baseline; gap:20px; flex-wrap:nowrap; min-width:0; flex-shrink:0; }
+  .ticker-badge{ font-family:'Roboto Mono',monospace; font-weight:700; letter-spacing:.02em; color:var(--amber); font-size:clamp(28px,8vw,90px); line-height:1; white-space:nowrap; flex-shrink:0; }
+  .hero-price{ font-family:'Roboto Mono',monospace; font-size:clamp(32px,9vw,100px); color:var(--ink); white-space:nowrap; min-width:0; }
   .hero-sub{ margin-top:10px; font-size:13px; color:var(--ink-dim); font-family:'Roboto Mono',monospace; flex-shrink:0; }
   .spark-wrap{ margin-top:40px; margin-bottom:34px; flex:1; min-height:0; position:relative; }
   .spark-wrap svg{ width:100%; height:100%; overflow:visible; position:relative; z-index:1; }
   .spark-label{ font-family:'Roboto Mono',monospace; font-weight:700; font-size:clamp(16px,2.2vw,24px); color:var(--amber); letter-spacing:.08em; margin-top:10px; flex-shrink:0; }
+  .xaxis-wrap{ position:relative; height:20px; margin-top:6px; flex-shrink:0; }
+  .xaxis-tick{ position:absolute; top:0; font-family:'Roboto Mono',monospace; font-size:12px; color:var(--ink-dim); white-space:nowrap; }
 
   .spark-callout{
     position:absolute; z-index:3;
@@ -31,9 +34,9 @@
   }
   .spark-callout.show{ display:block; }
   .spark-callout.below{ transform:translate(-50%,10px); }
-  .spark-callout.below::before{ content:""; position:absolute; top:-7px; left:50%; transform:translateX(-50%); border-left:7px solid transparent; border-right:7px solid transparent; border-bottom:7px solid #555555; }
+  .spark-callout.below::before{ content:""; position:absolute; top:-9px; left:50%; transform:translateX(-50%); border-left:9px solid transparent; border-right:9px solid transparent; border-bottom:9px solid var(--amber); }
   .spark-callout.above{ transform:translate(-50%,calc(-100% - 10px)); }
-  .spark-callout.above::before{ content:""; position:absolute; bottom:-7px; left:50%; transform:translateX(-50%); border-left:7px solid transparent; border-right:7px solid transparent; border-top:7px solid #555555; }
+  .spark-callout.above::before{ content:""; position:absolute; bottom:-9px; left:50%; transform:translateX(-50%); border-left:9px solid transparent; border-right:9px solid transparent; border-top:9px solid var(--amber); }
   footer{ display:flex; justify-content:space-between; font-family:'Roboto Mono',monospace; font-size:11px; color:var(--ink-dim); flex-shrink:0; }
 
   #app.sleep-mode:not(.peek){ background:#000; }
@@ -64,14 +67,17 @@
   </header>
 
   <div class="hero" id="hero">
-    <div class="ticker-badge">BTC</div>
-    <div class="hero-price" id="heroPrice">waiting...</div>
+    <div class="price-row">
+      <div class="ticker-badge">BTC</div>
+      <div class="hero-price" id="heroPrice">waiting...</div>
+    </div>
     <div class="hero-sub" id="heroSub"></div>
     <div class="spark-wrap">
       <svg id="sparkSvg" viewBox="0 0 600 70" preserveAspectRatio="none"></svg>
       <div class="spark-callout above" id="sparkMaxLabel"></div>
       <div class="spark-callout below" id="sparkMinLabel"></div>
     </div>
+    <div class="xaxis-wrap" id="xaxisWrap"></div>
     <div class="spark-label" id="sparkLabel">24H RANGE</div>
   </div>
 
@@ -302,6 +308,44 @@ function drawSparkline(points){
 
   const rangeLabels = {'1':'24H','7':'7D','30':'30D','365':'1Y'};
   document.getElementById('sparkLabel').textContent = `${rangeLabels[settings.chartRange]||'24H'}  ·  LOW ${fmtMoney(min,settings.currency)}  ·  HIGH ${fmtMoney(max,settings.currency)}`;
+
+  drawXAxis(points);
+}
+
+function formatXAxisTick(ts, chartRange){
+  const d = new Date(ts);
+  if(chartRange === '1'){
+    return d.toLocaleTimeString('en-AU', { hour:'2-digit', minute:'2-digit', hour12:false });
+  }else if(chartRange === '7'){
+    return d.toLocaleDateString('en-AU', { weekday:'short' });
+  }else if(chartRange === '30'){
+    return d.toLocaleDateString('en-AU', { day:'2-digit', month:'2-digit' });
+  }else{
+    return d.toLocaleDateString('en-AU', { month:'short' });
+  }
+}
+
+function drawXAxis(points){
+  const wrap = document.getElementById('xaxisWrap');
+  wrap.innerHTML = '';
+  if(!points || points.length < 2) return;
+  const tickCount = 5;
+  for(let i=0; i<tickCount; i++){
+    const idx = Math.round((i/(tickCount-1)) * (points.length-1));
+    const pct = (idx/(points.length-1)) * 100;
+    const span = document.createElement('span');
+    span.className = 'xaxis-tick';
+    span.textContent = formatXAxisTick(points[idx][0], settings.chartRange);
+    if(i === 0){
+      span.style.left = '0%';
+    }else if(i === tickCount-1){
+      span.style.right = '0%';
+    }else{
+      span.style.left = pct + '%';
+      span.style.transform = 'translateX(-50%)';
+    }
+    wrap.appendChild(span);
+  }
 }
 
 function restartPriceTimer(){
