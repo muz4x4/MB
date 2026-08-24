@@ -19,21 +19,21 @@
   .ticker-badge{ font-family:'Roboto Mono',monospace; font-weight:700; letter-spacing:.04em; color:var(--amber); font-size:clamp(32px,5.5vw,64px); line-height:1; margin-bottom:8px; flex-shrink:0; }
   .hero-price{ font-family:'Roboto Mono',monospace; font-size:clamp(40px,9vw,100px); color:var(--ink); white-space:nowrap; flex-shrink:0; }
   .hero-sub{ margin-top:10px; font-size:13px; color:var(--ink-dim); font-family:'Roboto Mono',monospace; flex-shrink:0; }
-  .spark-wrap{ margin-top:40px; flex:1; min-height:0; position:relative; }
+  .spark-wrap{ margin-top:40px; margin-bottom:34px; flex:1; min-height:0; position:relative; }
   .spark-wrap svg{ width:100%; height:100%; overflow:visible; position:relative; z-index:1; }
   .spark-label{ font-family:'Roboto Mono',monospace; font-weight:700; font-size:clamp(16px,2.2vw,24px); color:var(--amber); letter-spacing:.08em; margin-top:10px; flex-shrink:0; }
 
   .spark-callout{
     position:absolute; z-index:3;
-    background:var(--panel); border:1px solid var(--line); border-radius:6px;
-    padding:5px 12px; font-family:'Roboto Mono',monospace; font-weight:600; font-size:clamp(15px,1.8vw,20px); color:var(--ink-dim);
+    background:#141414; border:1px solid #555555; border-radius:6px;
+    padding:5px 12px; font-family:'Roboto Mono',monospace; font-weight:600; font-size:clamp(15px,1.8vw,20px); color:#F2F2F2;
     white-space:nowrap; pointer-events:none; display:none;
   }
   .spark-callout.show{ display:block; }
   .spark-callout.below{ transform:translate(-50%,10px); }
-  .spark-callout.below::before{ content:""; position:absolute; top:-7px; left:50%; transform:translateX(-50%); border-left:7px solid transparent; border-right:7px solid transparent; border-bottom:7px solid var(--line); }
+  .spark-callout.below::before{ content:""; position:absolute; top:-7px; left:50%; transform:translateX(-50%); border-left:7px solid transparent; border-right:7px solid transparent; border-bottom:7px solid #555555; }
   .spark-callout.above{ transform:translate(-50%,calc(-100% - 10px)); }
-  .spark-callout.above::before{ content:""; position:absolute; bottom:-7px; left:50%; transform:translateX(-50%); border-left:7px solid transparent; border-right:7px solid transparent; border-top:7px solid var(--line); }
+  .spark-callout.above::before{ content:""; position:absolute; bottom:-7px; left:50%; transform:translateX(-50%); border-left:7px solid transparent; border-right:7px solid transparent; border-top:7px solid #555555; }
   footer{ display:flex; justify-content:space-between; font-family:'Roboto Mono',monospace; font-size:11px; color:var(--ink-dim); flex-shrink:0; }
 
   #app.sleep-mode:not(.peek){ background:#000; }
