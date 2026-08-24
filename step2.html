@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Step 2</title>
+<style>
+  body{ background:#000; color:#FFD400; font-family:monospace; padding:20px; }
+  #price{ font-size:80px; margin:20px 0; }
+  #log{ font-size:16px; color:#888; white-space:pre-wrap; line-height:1.6; }
+  #stamp{ position:fixed; bottom:10px; right:20px; font-size:12px; color:#555; }
+</style>
+</head>
+<body>
+<div id="price">waiting...</div>
+<div id="log"></div>
+<div id="stamp">step2-build-1</div>
+
+<script>
+const logEl = document.getElementById('log');
+const priceEl = document.getElementById('price');
+function log(msg){
+  logEl.textContent += new Date().toLocaleTimeString() + ' — ' + msg + '\n';
+}
+
+async function tick(){
+  log('tick starting');
+  try{
+    const res = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd');
+    const data = await res.json();
+    priceEl.textContent = '$' + data.bitcoin.usd;
+    log('tick ok: ' + data.bitcoin.usd);
+  }catch(e){
+    log('tick ERROR: ' + e.message);
+    priceEl.textContent = 'ERROR';
+  }
+}
+
+log('page loaded');
+tick();
+setInterval(tick, 5000);
+</script>
+</body>
+</html>
