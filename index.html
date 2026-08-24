@@ -11,7 +11,7 @@
   :root{ --bg:#000; --panel:#050505; --line:#1A1A1A; --ink:#FFD400; --ink-dim:#5A5A5A; --amber:#2DA6FF; --up:#39FF14; --down:#FF1E3C; }
   *{ box-sizing:border-box; margin:0; padding:0; }
   html,body{ height:100%; background:var(--bg); color:var(--ink); overflow:hidden; font-family:'Space Grotesk',sans-serif; }
-  #app{ height:100vh; width:100vw; padding:16px 32px; display:flex; flex-direction:column; gap:16px; }
+  #app{ height:100vh; width:100vw; padding:8px 32px 16px 32px; display:flex; flex-direction:column; gap:8px; }
   header{ display:flex; justify-content:flex-end; align-items:center; flex-shrink:0; }
   .clock{ font-family:'Roboto Mono',monospace; font-size:14px; color:var(--ink-dim); display:flex; align-items:center; gap:16px; }
   .gear{ display:flex;align-items:center;justify-content:center; color:var(--ink-dim); cursor:pointer; font-size:34px; flex-shrink:0; padding:10px; }
@@ -20,7 +20,7 @@
   .ticker-badge{ font-family:'Roboto Mono',monospace; font-weight:700; letter-spacing:.02em; color:var(--amber); font-size:clamp(32px,9vw,100px); line-height:1; white-space:nowrap; flex-shrink:0; }
   .hero-price{ font-family:'Roboto Mono',monospace; font-size:clamp(32px,9vw,100px); color:var(--ink); white-space:nowrap; min-width:0; text-align:right; }
   .hero-sub{ margin-top:10px; font-size:13px; color:var(--ink-dim); font-family:'Roboto Mono',monospace; flex-shrink:0; }
-  .spark-wrap{ margin-top:24px; margin-bottom:34px; flex:1; min-height:0; position:relative; }
+  .spark-wrap{ margin-top:14px; margin-bottom:34px; flex:1; min-height:0; position:relative; }
   .spark-wrap svg{ width:100%; height:100%; overflow:visible; position:relative; z-index:1; }
   .spark-label{ font-family:'Roboto Mono',monospace; font-weight:700; font-size:clamp(16px,2.2vw,24px); color:var(--amber); letter-spacing:.08em; margin-top:10px; flex-shrink:0; }
   .xaxis-wrap{ position:relative; height:20px; margin-top:6px; flex-shrink:0; }
@@ -258,7 +258,27 @@ async function fetchSparkline(){
 }
 
 const TICK_COUNT = 5;
-function getTickIndices(len, count){
+
+// For 24H, ticks land exactly on the hour (local time). Other ranges use
+// evenly-spaced data points, which is already how they naturally fall.
+function getTickIndices(points, chartRange, count){
+  const len = points.length;
+  if(chartRange === '1'){
+    const tMin = points[0][0], tMax = points[len-1][0];
+    const HOUR = 3600*1000;
+    const stepMs = 6*HOUR; // 6-hour spacing gives ~5 ticks across 24h
+    let t = Math.ceil(tMin/HOUR)*HOUR; // next exact hour boundary (local hour == UTC hour boundary for whole-hour AU offsets)
+    const targets = [];
+    while(t <= tMax){ targets.push(t); t += stepMs; }
+    if(targets.length < 2) targets.push(tMax);
+    const idxSet = new Set();
+    targets.forEach(target=>{
+      let bestIdx = 0, bestDiff = Infinity;
+      points.forEach((p,i)=>{ const diff = Math.abs(p[0]-target); if(diff < bestDiff){ bestDiff = diff; bestIdx = i; } });
+      idxSet.add(bestIdx);
+    });
+    return Array.from(idxSet).sort((a,b)=>a-b);
+  }
   const arr = [];
   for(let i=0; i<count; i++) arr.push(Math.round((i/(count-1)) * (len-1)));
   return arr;
@@ -315,12 +335,14 @@ function drawSparkline(points){
   let maxIdx = 0, minIdx = 0;
   prices.forEach((p,i)=>{ if(p > prices[maxIdx]) maxIdx = i; if(p < prices[minIdx]) minIdx = i; });
 
-  // grid lines rising from each x-axis tick position, so it's obvious exactly
-  // where each time label lines up on the graph
-  const tickIndices = getTickIndices(points.length, TICK_COUNT);
+  // grid lines rising from each x-axis tick position up to the price line
+  // itself (not above it), so it's obvious exactly where each time label
+  // lines up on the graph
+  const tickIndices = getTickIndices(points, settings.chartRange, TICK_COUNT);
   const gridLines = tickIndices.map(idx=>{
     const x = coords[idx][0].toFixed(1);
-    return `<line x1="${x}" y1="0" x2="${x}" y2="${H}" stroke="rgba(255,255,255,0.10)" stroke-width="1"/>`;
+    const yTop = coords[idx][1].toFixed(1);
+    return `<line x1="${x}" y1="${yTop}" x2="${x}" y2="${H}" stroke="rgba(255,255,255,0.10)" stroke-width="1"/>`;
   }).join('');
 
   svg.innerHTML = `
@@ -354,7 +376,9 @@ function formatXAxisTick(ts, chartRange){
   }else if(chartRange === '7'){
     return d.toLocaleDateString('en-AU', { weekday:'short' });
   }else if(chartRange === '30'){
-    return d.toLocaleDateString('en-AU', { day:'2-digit', month:'2-digit' });
+    const wd = d.toLocaleDateString('en-AU', { weekday:'short' });
+    const mon = d.toLocaleDateString('en-AU', { month:'short' });
+    return `${wd} ${d.getDate()} ${mon}`;
   }else{
     return d.toLocaleDateString('en-AU', { month:'short' });
   }
