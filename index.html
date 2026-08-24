@@ -203,7 +203,7 @@
 
   <footer>
     <span id="lastUpdated">Not yet updated</span>
-    <span id="buildStamp">build 2026-08-24-c</span>
+    <span id="buildStamp">build 2026-08-24-e</span>
   </footer>
 </div>
 
@@ -298,7 +298,7 @@ const DEFAULTS = {
   currency: 'usd',
   interval: 5,
   chartRange: '1',
-  theme: 'amber',
+  theme: 'led',
   matrixMode: false,
   sleepEnabled: false,
   sleepStart: '21:30',
@@ -618,22 +618,27 @@ async function refreshAll(){
     ok = true;
   }catch(e){
     console.error('crypto fetch failed:', e.message || e);
+    dot.className = 'dot err';
+    showBanner('BTC price error: ' + (e.message || 'unknown') + '. Check the CoinGecko key in settings, or try removing it to test the free tier.');
   }
   if(ok){
     dot.className = 'dot live';
     hideBanner();
-  }else{
-    dot.className = 'dot err';
-    showBanner('Rate limited or unreachable. If you\'re on the free tier, try a slower interval or add your CoinGecko Demo key in settings.');
   }
   document.getElementById('lastUpdated').textContent = 'Updated ' + new Date().toLocaleTimeString('en-AU',{hour12:false});
 }
 
 function applyCrypto(data){
   const vs = settings.currency;
-  const btc = data.bitcoin;
   document.getElementById('heroLabel').textContent = 'BTC / ' + vs.toUpperCase();
-  if(!btc || btc[vs] === undefined) return;
+
+  if(data && data.status && data.status.error_message){
+    throw new Error(data.status.error_message);
+  }
+  const btc = data ? data.bitcoin : null;
+  if(!btc || btc[vs] === undefined){
+    throw new Error('unexpected response shape: ' + JSON.stringify(data).slice(0,120));
+  }
 
   renderFlip(document.getElementById('heroPrice'), fmtMoney(btc[vs], vs));
   const chg = btc[vs+'_24h_change'];
