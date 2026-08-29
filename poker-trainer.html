@@ -1,0 +1,771 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<title>Hold'em Trainer</title>
+<style>
+  html, body { margin: 0; padding: 0; background: #071a15; }
+</style>
+<script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel" data-presets="react">
+const { useReducer } = React;
+
+
+
+/* =========================================================================
+   1. CARDS & DECK
+   ========================================================================= */
+const RANKS = ["2","3","4","5","6","7","8","9","T","J","Q","K","A"];
+const SUITS = ["♠","♥","♦","♣"];
+const RANK_VAL = Object.fromEntries(RANKS.map((r, i) => [r, i + 2]));
+const isRed = (s) => s === "♥" || s === "♦";
+const cardStr = (c) => c.r + c.s;
+
+function buildDeck() {
+  return SUITS.flatMap((s) => RANKS.map((r) => ({ r, s })));
+}
+function shuffle(cards) {
+  const d = [...cards];
+  for (let i = d.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [d[i], d[j]] = [d[j], d[i]];
+  }
+  return d;
+}
+
+/* =========================================================================
+   2. HAND EVALUATION (best 5 of N cards)
+   ========================================================================= */
+const CATEGORY_NAMES = ["High Card","Pair","Two Pair","Three of a Kind","Straight","Flush","Full House","Four of a Kind","Straight Flush"];
+
+function combinations(arr, k) {
+  const out = [];
+  (function build(start, chosen) {
+    if (chosen.length === k) { out.push([...chosen]); return; }
+    for (let i = start; i < arr.length; i++) { chosen.push(arr[i]); build(i + 1, chosen); chosen.pop(); }
+  })(0, []);
+  return out;
+}
+
+function evaluate5(cards) {
+  const vals = cards.map((c) => RANK_VAL[c.r]).sort((a, b) => b - a);
+  const flush = cards.every((c) => c.s === cards[0].s);
+  const uniq = [...new Set(vals)];
+  const isWheel = JSON.stringify(uniq) === JSON.stringify([14, 5, 4, 3, 2]);
+  const straight = uniq.length === 5 && (uniq[0] - uniq[4] === 4 || isWheel);
+  const straightHigh = isWheel ? 5 : uniq[0];
+
+  const counts = {};
+  vals.forEach((v) => (counts[v] = (counts[v] || 0) + 1));
+  const groups = Object.entries(counts)
+    .map(([v, c]) => ({ v: +v, c }))
+    .sort((a, b) => b.c - a.c || b.v - a.v);
+
+  if (straight && flush) return [8, [straightHigh]];
+  if (groups[0].c === 4) return [7, [groups[0].v, groups[1].v]];
+  if (groups[0].c === 3 && groups[1].c === 2) return [6, [groups[0].v, groups[1].v]];
+  if (flush) return [5, vals];
+  if (straight) return [4, [straightHigh]];
+  if (groups[0].c === 3) return [3, groups.map((g) => g.v)];
+  if (groups[0].c === 2 && groups[1].c === 2) return [2, groups.map((g) => g.v)];
+  if (groups[0].c === 2) return [1, groups.map((g) => g.v)];
+  return [0, vals];
+}
+
+function compareHand(a, b) {
+  if (a[0] !== b[0]) return a[0] - b[0];
+  for (let i = 0; i < Math.max(a[1].length, b[1].length); i++) {
+    const diff = (a[1][i] || 0) - (b[1][i] || 0);
+    if (diff) return diff;
+  }
+  return 0;
+}
+
+/** Returns { value, cards } — the best 5-card hand out of 5-7 cards. */
+function bestHand(cards) {
+  let best = null, bestCards = null;
+  for (const combo of combinations(cards, 5)) {
+    const value = evaluate5(combo);
+    if (!best || compareHand(value, best) > 0) { best = value; bestCards = combo; }
+  }
+  return { value: best, cards: bestCards };
+}
+
+/** Human-readable winning hand, marking which cards were the player's hole cards. */
+function describeHand(hole, board) {
+  const { value, cards } = bestHand([...hole, ...board]);
+  const holeSet = new Set(hole.map(cardStr));
+  const ordered = [...cards].sort((a, b) => RANK_VAL[b.r] - RANK_VAL[a.r]);
+  const shown = ordered.map((c) => (holeSet.has(cardStr(c)) ? `[${cardStr(c)}]` : cardStr(c)));
+  return `${CATEGORY_NAMES[value[0]]}: ${shown.join(" ")} ([bracketed] = hole cards)`;
+}
+
+/* =========================================================================
+   3. PRE-FLOP TIERS & EQUITY ESTIMATION
+   ========================================================================= */
+const TIERS = [
+  { tier: "Premium", pct: "78-82%", examples: "AA, KK, QQ, AK" },
+  { tier: "Good", pct: "55-62%", examples: "JJ-99, AQ, KQs" },
+  { tier: "Marginal", pct: "40-48%", examples: "22-88, suited Ax/broadway" },
+  { tier: "Weak", pct: "~24%", examples: "everything else" },
+];
+
+function preflopTier([a, b]) {
+  const va = RANK_VAL[a.r], vb = RANK_VAL[b.r];
+  const hi = Math.max(va, vb), lo = Math.min(va, vb);
+  const suited = a.s === b.s, pair = va === vb;
+
+  if (pair && hi >= 10) return { tier: "Premium", pct: 82 };
+  if (hi === 14 && lo >= 11) return { tier: "Premium", pct: 78 };
+  if (pair && hi >= 7) return { tier: "Good", pct: 62 };
+  if (hi >= 11 && lo >= 10) return { tier: "Good", pct: 58 };
+  if (suited && hi === 14) return { tier: "Good", pct: 55 };
+  if (pair) return { tier: "Marginal", pct: 48 };
+  if (suited && hi >= 10) return { tier: "Marginal", pct: 44 };
+  if (hi >= 13 || (hi >= 11 && suited)) return { tier: "Marginal", pct: 40 };
+  return { tier: "Weak", pct: 24 };
+}
+
+function unusedCards(...groups) {
+  const used = new Set(groups.flat().map(cardStr));
+  return buildDeck().filter((c) => !used.has(cardStr(c)));
+}
+
+/** Monte Carlo win% for `hole` given `board`, vs N random opponents. */
+function estimateEquity(hole, board, numOpponents, trials = 150) {
+  const pool = unusedCards(hole, board);
+  let wins = 0, ties = 0;
+  for (let t = 0; t < trials; t++) {
+    const shuffled = shuffle(pool);
+    const fullBoard = [...board, ...shuffled.slice(0, 5 - board.length)];
+    let cursor = 5 - board.length;
+    const opponents = Array.from({ length: numOpponents }, () => {
+      const hand = [shuffled[cursor], shuffled[cursor + 1]];
+      cursor += 2;
+      return hand;
+    });
+
+    const my = bestHand([...hole, ...fullBoard]).value;
+    let iAmBest = true, tie = false;
+    for (const opp of opponents) {
+      const cmp = compareHand(bestHand([...opp, ...fullBoard]).value, my);
+      if (cmp > 0) { iAmBest = false; break; }
+      if (cmp === 0) tie = true;
+    }
+    if (iAmBest) tie ? ties++ : wins++;
+  }
+  return Math.round(((wins + ties * 0.5) / trials) * 100);
+}
+
+function equityFor(hole, board, numOpponents) {
+  return board.length === 0
+    ? { eq: preflopTier(hole).pct, source: `preflop tier (${preflopTier(hole).tier})` }
+    : { eq: estimateEquity(hole, board, Math.max(1, numOpponents)), source: `Monte Carlo vs ${Math.max(1, numOpponents)} opp.` };
+}
+
+function potOddsPct(toCall, potAfterCall) {
+  return toCall > 0 ? Math.round((toCall / potAfterCall) * 100) : 0;
+}
+
+function recommend(eq, potOdds) {
+  if (eq >= 65) return { action: "RAISE", reason: `Win% (${eq}) well above break-even — value bet.` };
+  if (eq >= potOdds + 8) return { action: "CALL", reason: `Win% (${eq}) beats break-even (${potOdds}) — profitable.` };
+  if (eq >= potOdds - 3) return { action: "BORDERLINE", reason: `Win% (${eq}) close to break-even (${potOdds}) — marginal.` };
+  return { action: "FOLD", reason: `Win% (${eq}) below break-even (${potOdds}) — losing call.` };
+}
+
+/* =========================================================================
+   4. GAME CONSTANTS & BOT AI
+   ========================================================================= */
+const STARTING_STACK = 500;
+const SMALL_BLIND = 25;
+const BIG_BLIND = 50;
+const BOT_PROFILES = [
+  { id: "doug", name: "Doug", looseness: 0.5 },
+  { id: "pam", name: "Pam", looseness: 0.15 },
+  { id: "ray", name: "Ray", looseness: 0.75 },
+];
+const PLAYER_ORDER = ["you", "doug", "pam", "ray"];
+
+function decideBotAction(bot, board) {
+  if (bot.stack <= 0) return { type: "fold" };
+  const eq = board.length === 0 ? preflopTier(bot.hole).pct : estimateEquity(bot.hole, board, 1, 60);
+  const threshold = 45 - bot.looseness * 15;
+
+  if (eq > 68) return { type: "raise", amount: Math.min(BIG_BLIND * 2, bot.stack) };
+  if (eq > threshold) return { type: board.length === 0 || Math.random() > 0.5 ? "call" : "check" };
+  if (Math.random() < bot.looseness * 0.25) return { type: "call" };
+  return { type: "fold" };
+}
+
+/* =========================================================================
+   5. GAME ENGINE — pure functions over a single `state` object
+   ========================================================================= */
+function newPlayer(id, name, stack, extra = {}) {
+  return { id, name, stack, hole: [], chipsInHand: 0, folded: false, eliminated: false, ...extra };
+}
+
+function initialState() {
+  return {
+    stage: "idle", // idle | betting | resolved | gameover
+    street: "preflop", // preflop | flop | turn | river
+    deck: [],
+    board: [],
+    players: {
+      you: newPlayer("you", "You", STARTING_STACK),
+      doug: newPlayer("doug", "Doug", STARTING_STACK, { looseness: 0.5 }),
+      pam: newPlayer("pam", "Pam", STARTING_STACK, { looseness: 0.15 }),
+      ray: newPlayer("ray", "Ray", STARTING_STACK, { looseness: 0.75 }),
+    },
+    dealerId: "you",
+    pot: 0,
+    toCall: 0,
+    handsPlayed: 0,
+    handsWon: 0,
+    netChips: 0,
+    log: [],
+    advice: null,
+    explainer: null,
+    gameOverMessage: null,
+    pendingGameOverMessage: null,
+    prevStacks: null,
+    lastHandResult: null, // { pot, contributions: {id: amount}, winnerId }
+    raisersThisStreet: [],
+    awaitingRaiseResponse: false,
+  };
+}
+
+const activeIds = (players) => PLAYER_ORDER.filter((id) => !players[id].eliminated);
+const nextActiveId = (fromId, players) => {
+  const order = PLAYER_ORDER;
+  let i = order.indexOf(fromId);
+  for (let step = 1; step <= order.length; step++) {
+    const candidate = order[(i + step) % order.length];
+    if (!players[candidate].eliminated) return candidate;
+  }
+  return fromId;
+};
+
+function postBlind(players, id, amount) {
+  const p = players[id];
+  const posted = Math.min(amount, p.stack);
+  return { ...players, [id]: { ...p, chipsInHand: p.chipsInHand + posted } };
+}
+
+/** Deals a new hand: rotates dealer, posts blinds, resets per-hand fields. */
+function dealHand(state) {
+  const active = activeIds(state.players);
+  if (active.length < 2) return state; // caller should have already ended the game
+
+  const snapshot = Object.fromEntries(PLAYER_ORDER.map((id) => [id, state.players[id].stack]));
+
+  const deck = shuffle(buildDeck());
+  const dealerId = state.handsPlayed === 0 ? state.dealerId : nextActiveId(state.dealerId, state.players);
+  const dealOrder = active.slice(active.indexOf(dealerId)).concat(active.slice(0, active.indexOf(dealerId)));
+  const sbId = dealOrder[1 % dealOrder.length];
+  const bbId = dealOrder[2 % dealOrder.length];
+
+  let players = {};
+  for (const id of PLAYER_ORDER) {
+    const base = state.players[id];
+    players[id] = base.eliminated
+      ? { ...base, hole: [], folded: true, chipsInHand: 0 }
+      : { ...base, hole: [deck.pop(), deck.pop()], folded: false, chipsInHand: 0 };
+  }
+  players = postBlind(players, sbId, SMALL_BLIND);
+  players = postBlind(players, bbId, BIG_BLIND);
+
+  const pot = players[sbId].chipsInHand + players[bbId].chipsInHand;
+  const toCall = bbId === "you" ? 0 : BIG_BLIND - players.you.chipsInHand;
+
+  return {
+    ...state,
+    stage: "betting",
+    street: "preflop",
+    deck, board: [],
+    players,
+    dealerId,
+    pot,
+    toCall: Math.max(0, toCall),
+    handsPlayed: state.handsPlayed + 1,
+    log: [`Dealer: ${state.players[dealerId] ? state.players[dealerId].name : dealerId}. ${players[sbId].name || sbId} posts SB ${SMALL_BLIND}, ${players[bbId].name || bbId} posts BB ${BIG_BLIND}. Pot: ${pot}.`],
+    advice: computeAdvice(players.you.hole, [], pot, toCall, active.length - 1),
+    explainer: null,
+    gameOverMessage: null,
+    prevStacks: snapshot,
+    raisersThisStreet: [],
+  };
+}
+
+function computeAdvice(hole, board, pot, toCall, numOpponents) {
+  const { eq, source } = equityFor(hole, board, numOpponents);
+  const finalPot = pot + toCall;
+  const potOdds = potOddsPct(toCall, finalPot);
+  return { eq, source, potOdds, callAmt: toCall, potAmt: finalPot, ...recommend(eq, potOdds) };
+}
+
+/** Apply the human player's action. If we're only responding to a bot's raise (bots already
+    acted this street), skip straight to street-advance/showdown instead of running bots again. */
+function applyYourAction(state, type, raiseBy = 0) {
+  const you = state.players.you;
+  let players = state.players;
+  let pot = state.pot;
+
+  if (type === "fold") {
+    players = { ...players, you: { ...you, folded: true } };
+    return resolveAfterFold({ ...state, players, log: [`You fold.`, ...state.log] });
+  }
+
+  let amount = 0, note;
+  if (type === "call") { amount = Math.min(state.toCall, you.stack); note = amount < state.toCall ? `You call all-in for ${amount}.` : `You call ${amount}.`; }
+  else if (type === "raise") { const desired = state.toCall + raiseBy; amount = Math.min(desired, you.stack); note = amount < desired ? `You go all-in for ${amount}.` : `You raise to ${amount}.`; }
+  else note = "You check.";
+
+  players = { ...players, you: { ...you, chipsInHand: you.chipsInHand + amount } };
+  pot += amount;
+  const log = [note, ...state.log];
+  const next = { ...state, players, pot, log, toCall: 0, awaitingRaiseResponse: false };
+
+  return state.awaitingRaiseResponse ? advanceAfterBetting(next) : runBotsThenAdvance(next);
+}
+
+/** Move past the current street once betting is settled: showdown on the river, otherwise deal on. */
+function advanceAfterBetting(state) {
+  const stillIn = activeIds(state.players).filter((id) => !state.players[id].folded);
+  if (stillIn.length === 1) return stillIn[0] === "you" ? awardUncontestedWin(state) : resolveAfterFold(state);
+  return state.street === "river" ? resolveShowdown(state) : dealNextStreet(state);
+}
+
+/** Bots act in turn. If any bot raises, stop and hand control back to the player to respond —
+    otherwise resolve the street (showdown on the river, or deal the next card). */
+function runBotsThenAdvance(state) {
+  let players = state.players;
+  let pot = state.pot;
+  const log = [...state.log];
+  const raisers = [];
+  let raiseTarget = 0; // highest chipsInHand any live bot has reached this street
+
+  for (const id of PLAYER_ORDER) {
+    if (id === "you") continue;
+    const bot = players[id];
+    if (bot.folded || bot.eliminated) continue;
+    const decision = decideBotAction(bot, state.board);
+    if (decision.type === "fold") { players = { ...players, [id]: { ...bot, folded: true } }; log.unshift(`${bot.name} folds.`); continue; }
+    if (decision.type === "check") { log.unshift(`${bot.name} checks.`); continue; }
+    const callAmount = decision.type === "raise" ? decision.amount : Math.min(BIG_BLIND, bot.stack);
+    const updatedBot = { ...bot, chipsInHand: bot.chipsInHand + callAmount };
+    players = { ...players, [id]: updatedBot };
+    pot += callAmount;
+    if (decision.type === "raise") raisers.push(bot.name);
+    raiseTarget = Math.max(raiseTarget, updatedBot.chipsInHand);
+    log.unshift(decision.type === "raise" ? `${bot.name} bets ${callAmount}.` : `${bot.name} calls.`);
+  }
+
+  const stillIn = activeIds(players).filter((id) => !players[id].folded);
+  const next = { ...state, players, pot, log, raisersThisStreet: raisers };
+
+  if (stillIn.length === 1 && stillIn[0] === "you") return awardUncontestedWin(next);
+  if (stillIn.length === 1) return resolveAfterFold(next); // you already folded above; safety net
+
+  const owed = raiseTarget - players.you.chipsInHand;
+  if (owed > 0) {
+    return {
+      ...next,
+      toCall: owed,
+      awaitingRaiseResponse: true,
+      log: [`You owe ${owed} to stay in after that raise.`, ...log],
+      advice: computeAdvice(players.you.hole, state.board, pot, owed, stillIn.filter((id) => id !== "you").length),
+      explainer: null,
+    };
+  }
+
+  return advanceAfterBetting(next);
+}
+
+function dealNextStreet(state) {
+  const deck = [...state.deck];
+  const draw = (n) => Array.from({ length: n }, () => deck.pop());
+  const streetMap = { preflop: ["flop", 3], flop: ["turn", 1], turn: ["river", 1] };
+  const [street, count] = streetMap[state.street];
+  const board = [...state.board, ...draw(count)];
+
+  const opponents = activeIds(state.players).filter((id) => id !== "you" && !state.players[id].folded).length;
+  return {
+    ...state,
+    deck, board, street,
+    toCall: 0,
+    advice: computeAdvice(state.players.you.hole, board, state.pot, 0, opponents),
+    explainer: null,
+    raisersThisStreet: [],
+    log: [`— ${street} —`, ...state.log],
+  };
+}
+
+/** Player folded: remaining bots play out (auto-completing the board) and best bot wins the pot. */
+function resolveAfterFold(state) {
+  let deck = [...state.deck];
+  let board = [...state.board];
+  while (board.length < 5) board.push(deck.pop());
+
+  const contenders = activeIds(state.players).filter((id) => id !== "you" && !state.players[id].folded);
+  let winnerId = null, winnerValue = null;
+  for (const id of contenders) {
+    const value = bestHand([...state.players[id].hole, ...board]).value;
+    if (!winnerValue || compareHand(value, winnerValue) > 0) { winnerValue = value; winnerId = id; }
+  }
+
+  const you = state.players.you;
+  const settled = settleStacks(state.players, winnerId, state.pot);
+  const log = [...state.log];
+  if (winnerId) log.unshift(`${settled[winnerId].name} wins the pot (${state.pot}) — ${describeHand(state.players[winnerId].hole, board)}`);
+
+  return finishHand({ ...state, players: settled, board, log, netDelta: -you.chipsInHand, lastHandResult: captureHandResult(state.players, state.pot, winnerId) });
+}
+
+function awardUncontestedWin(state) {
+  const you = state.players.you;
+  const settled = settleStacks(state.players, "you", state.pot);
+  const log = [`All opponents folded — you win the pot uncontested.`, ...state.log];
+  return finishHand({ ...state, players: settled, log, netDelta: state.pot - you.chipsInHand, youWon: true, lastHandResult: captureHandResult(state.players, state.pot, "you") });
+}
+
+function resolveShowdown(state) {
+  const contenders = activeIds(state.players).filter((id) => !state.players[id].folded);
+  let winnerId = null, winnerValue = null;
+  for (const id of contenders) {
+    const value = bestHand([...state.players[id].hole, ...state.board]).value;
+    if (!winnerValue || compareHand(value, winnerValue) > 0) { winnerValue = value; winnerId = id; }
+  }
+
+  const you = state.players.you;
+  const settled = settleStacks(state.players, winnerId, state.pot);
+  const youWon = winnerId === "you";
+  const log = [
+    youWon
+      ? `Showdown: you win! ${describeHand(you.hole, state.board)}`
+      : `Showdown: ${settled[winnerId].name} wins — ${describeHand(state.players[winnerId].hole, state.board)}`,
+    ...state.log,
+  ];
+
+  return finishHand({ ...state, players: settled, log, netDelta: (youWon ? state.pot : 0) - you.chipsInHand, youWon, lastHandResult: captureHandResult(state.players, state.pot, winnerId) });
+}
+
+/** Give the pot to `winnerId`, zero everyone's chipsInHand, leave others' stacks as-is (already reduced when they bet is NOT the model — see note). */
+function settleStacks(players, winnerId, pot) {
+  const out = {};
+  for (const id of PLAYER_ORDER) {
+    const p = players[id];
+    if (id === "you") { out[id] = p; continue; } // resolved separately by caller for clarity
+    const delta = id === winnerId ? pot - p.chipsInHand : -p.chipsInHand;
+    out[id] = { ...p, stack: p.stack + delta, chipsInHand: 0 };
+  }
+  return out;
+}
+
+function captureHandResult(players, pot, winnerId) {
+  const contributions = Object.fromEntries(PLAYER_ORDER.map((id) => [id, players[id].chipsInHand]));
+  return { pot, contributions, winnerId };
+}
+
+function finishHand(state) {
+  const you = state.players.you;
+  const updatedYou = { ...you, stack: you.stack + (state.netDelta || 0), chipsInHand: 0 };
+  const players = { ...state.players, you: updatedYou };
+
+  const eliminated = markEliminated(players);
+  const gameOverMessage = checkGameOver(eliminated);
+
+  return {
+    ...state,
+    players: eliminated,
+    stage: "resolved",
+    advice: null,
+    netChips: state.netChips + (state.netDelta || 0),
+    handsWon: state.handsWon + (state.youWon ? 1 : 0),
+    pendingGameOverMessage: gameOverMessage,
+    lastHandResult: state.lastHandResult,
+  };
+}
+
+function markEliminated(players) {
+  const out = {};
+  for (const id of PLAYER_ORDER) out[id] = players[id].stack <= 0 ? { ...players[id], eliminated: true } : players[id];
+  return out;
+}
+
+function checkGameOver(players) {
+  const remaining = activeIds(players);
+  if (players.you.eliminated) return "You've lost all your chips — game over.";
+  if (remaining.length < 2) {
+    const winner = remaining[0];
+    return winner ? `${players[winner].name} wins the game — everyone else is out of chips!` : "Game over.";
+  }
+  return null;
+}
+
+/* =========================================================================
+   6. REDUCER
+   ========================================================================= */
+function reducer(state, action) {
+  switch (action.type) {
+    case "DEAL_HAND": return dealHand(state);
+    case "PLAYER_ACTION": {
+      const next = applyYourAction(state, action.action, action.raiseBy);
+      return next.stage === "betting" ? { ...next, explainer: buildExplainer(next) } : next;
+    }
+    case "EXPLAIN": return { ...state, explainer: buildExplainer(state) };
+    case "CONTINUE": return state.pendingGameOverMessage
+      ? { ...state, stage: "gameover", gameOverMessage: state.pendingGameOverMessage, pendingGameOverMessage: null }
+      : state;
+    case "NEW_GAME": return initialState();
+    default: return state;
+  }
+}
+
+function qualitativeStrength(eq) {
+  if (eq >= 65) return "high";
+  if (eq >= 45) return "medium";
+  if (eq >= 30) return "low";
+  return "very low";
+}
+
+function buildExplainer(state) {
+  const { advice, board, players, raisersThisStreet } = state;
+  if (!advice) return null;
+  const hole = players.you.hole;
+  const isPreflop = board.length === 0;
+  const handLabel = isPreflop ? `${preflopTier(hole).tier} starting hand` : CATEGORY_NAMES[bestHand([...hole, ...board]).value[0]];
+
+  const aggression = raisersThisStreet && raisersThisStreet.length > 0;
+  let strength = qualitativeStrength(advice.eq);
+  if (aggression && strength === "high") strength = "medium";
+  else if (aggression && strength === "medium") strength = "low";
+
+  const lines = [`Hand quality: ${strength} (${handLabel})`];
+
+  if (aggression) lines.push(`${raisersThisStreet.join(" and ")} raised this street — downgrading your read, a raise usually means real strength.`);
+
+  if (advice.callAmt > 0) {
+    const priceWord = advice.eq >= advice.potOdds ? "reasonable" : "too steep";
+    lines.push(`Price to call: ${priceWord} for a ${strength}-quality hand.`);
+  }
+
+  const action = strength === "high" ? "Bet or raise"
+    : strength === "medium" ? (advice.callAmt === 0 ? "Check" : advice.eq < advice.potOdds ? "Fold" : "Call, don't raise")
+    : strength === "low" ? (advice.callAmt === 0 ? "Check, it's free" : "Fold — only continue if free")
+    : (advice.callAmt === 0 ? "Check, it's free" : "Fold");
+
+  lines.push(`Do: ${action}`);
+  lines.push(`Why: ${
+    strength === "high" ? "you're very likely ahead of what opponents are holding — build the pot while you have the edge."
+    : strength === "medium" ? "you're roughly competitive but not clearly ahead — avoid putting in extra chips chasing it."
+    : strength === "low" ? "you're behind more often than not — only worth seeing another card if it costs you nothing."
+    : "you're very likely behind — continuing loses chips over time."
+  }`);
+
+  return lines;
+}
+
+/* =========================================================================
+   7. UI COMPONENTS
+   ========================================================================= */
+const COLORS = { bg: "#0a2921aa", border: "#d4af7a33", gold: "#d4af7a", panel: "#0a2921aa" };
+
+function CardView({ card }) {
+  return (
+    <div style={{ width: 40, height: 56, background: "#f2e9d8", borderRadius: 5, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", color: isRed(card.s) ? "#a33" : "#1a1a1a", fontWeight: "bold", fontSize: 15, boxShadow: "0 2px 4px rgba(0,0,0,.4)" }}>
+      <div>{card.r}</div>
+      <div style={{ fontSize: 18, marginTop: -4 }}>{card.s}</div>
+    </div>
+  );
+}
+
+function ActionButton({ onClick, label, color }) {
+  return <button onClick={onClick} style={{ background: color, color: "#f2e9d8", border: "none", padding: "10px 18px", borderRadius: 4, cursor: "pointer", fontFamily: "inherit", fontSize: 14 }}>{label}</button>;
+}
+
+function Panel({ title, children }) {
+  return (
+    <div style={{ background: COLORS.panel, border: `1px solid ${COLORS.border}`, borderRadius: 8, padding: 16 }}>
+      <div style={{ fontSize: 12, opacity: .6, marginBottom: 10, letterSpacing: 1, textTransform: "uppercase" }}>{title}</div>
+      {children}
+    </div>
+  );
+}
+
+function Scoreboard({ players, prevStacks, lastHandResult }) {
+  const ranked = PLAYER_ORDER.map((id) => players[id]).sort((a, b) => b.stack - a.stack);
+  return (
+    <Panel title="Scoreboard">
+      <div style={{ display: "flex", flexDirection: "column", gap: 8, fontSize: 13 }}>
+        {ranked.map((p, i) => {
+          const prev = prevStacks ? prevStacks[p.id] : null;
+          const delta = prev !== null ? p.stack - prev : null;
+          const contribution = lastHandResult ? lastHandResult.contributions[p.id] : null;
+          const won = lastHandResult && lastHandResult.winnerId === p.id;
+          return (
+            <div key={p.id} style={{ padding: "4px 0", color: p.eliminated ? "#f2e9d855" : p.id === "you" ? COLORS.gold : "inherit", textDecoration: p.eliminated ? "line-through" : "none" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", fontWeight: p.id === "you" && !p.eliminated ? "bold" : "normal" }}>
+                <span>{i + 1}. {p.name}{p.eliminated ? " (out)" : ""}</span>
+                <span>
+                  {delta !== null && <span style={{ opacity: .7, fontWeight: "normal", marginRight: 8 }}>{prev} {delta >= 0 ? "+" : ""}{delta} →</span>}
+                  {p.stack}
+                </span>
+              </div>
+              {contribution !== null && contribution >= 0 && prev !== null && (
+                <div style={{ fontSize: 11, opacity: .55, marginTop: 2 }}>
+                  {won
+                    ? `${prev} − ${contribution} (put in) + ${lastHandResult.pot} (pot) = ${p.stack}`
+                    : contribution > 0 ? `${prev} − ${contribution} (put in) = ${p.stack}` : `no change`}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </Panel>
+  );
+}
+
+function LogPanel({ log }) {
+  return (
+    <Panel title="Hand log">
+      <div style={{ fontSize: 13, lineHeight: 1.8, opacity: .85, display: "flex", flexDirection: "column", gap: 4 }}>
+        {log.length ? log.map((l, i) => <div key={i}>{l}</div>) : <div style={{ opacity: .5 }}>No hands played yet.</div>}
+      </div>
+    </Panel>
+  );
+}
+
+function TierTable({ currentTier }) {
+  return (
+    <Panel title="Pre-flop tiers">
+      <div style={{ display: "flex", flexDirection: "column", gap: 6, fontSize: 13 }}>
+        {TIERS.map((row) => (
+          <div key={row.tier} style={{ padding: "6px 8px", borderRadius: 4, background: currentTier === row.tier ? "#d4af7a33" : "transparent", border: currentTier === row.tier ? "1px solid #d4af7a88" : "1px solid transparent" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", fontWeight: currentTier === row.tier ? "bold" : "normal", color: currentTier === row.tier ? COLORS.gold : "inherit" }}>
+              <span>{row.tier}</span><span>{row.pct}</span>
+            </div>
+            <div style={{ fontSize: 11, opacity: .6 }}>{row.examples}</div>
+          </div>
+        ))}
+      </div>
+    </Panel>
+  );
+}
+
+/* =========================================================================
+   8. MAIN APP
+   ========================================================================= */
+function PokerTrainer() {
+  const [state, dispatch] = useReducer(reducer, undefined, initialState);
+  const { stage, street, board, players, pot, toCall, log, advice, explainer, gameOverMessage, pendingGameOverMessage, handsPlayed, handsWon, netChips } = state;
+  const you = players.you;
+  const currentTier = board.length === 0 && you.hole.length ? preflopTier(you.hole).tier : null;
+  const opponentsLeft = PLAYER_ORDER.filter((id) => id !== "you" && !players[id].folded && !players[id].eliminated).length;
+  const postedBlind = you.chipsInHand > 0 && stage === "betting" && street === "preflop" ? you.chipsInHand : 0;
+
+  return (
+    <div style={{ minHeight: "100vh", background: "radial-gradient(ellipse at center, #0f3d2e 0%, #0a2921 60%, #071a15 100%)", fontFamily: "Georgia, serif", color: "#f2e9d8", padding: "16px 12px" }}>
+      <div style={{ maxWidth: 640, margin: "0 auto", display: "flex", flexDirection: "column", gap: 16 }}>
+
+        <header style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 4, borderBottom: `1px solid ${COLORS.border}`, paddingBottom: 10 }}>
+          <h1 style={{ fontSize: 19, margin: 0, color: COLORS.gold, letterSpacing: .5 }}>Hold'em Trainer</h1>
+          <div style={{ fontSize: 12, opacity: .85, textAlign: "right" }}>
+            <div>Chips: {you.stack} ({netChips >= 0 ? "+" : ""}{netChips})</div>
+            <div>Hands: {handsWon}/{handsPlayed} won</div>
+          </div>
+        </header>
+
+        {stage === "gameover" && (
+          <div style={{ textAlign: "center", padding: "32px 0" }}>
+            <div style={{ fontSize: 18, color: COLORS.gold, marginBottom: 16, fontWeight: "bold" }}>{gameOverMessage}</div>
+            <ActionButton onClick={() => dispatch({ type: "NEW_GAME" })} label="Start New Game" color={COLORS.gold} />
+          </div>
+        )}
+        {stage === "gameover" && <Scoreboard players={players} prevStacks={state.prevStacks} lastHandResult={state.lastHandResult} />}
+
+        {(stage === "idle" || stage === "resolved") && (
+          <div style={{ textAlign: "center", padding: "24px 0" }}>
+            {stage === "resolved" && pendingGameOverMessage
+              ? <ActionButton onClick={() => dispatch({ type: "CONTINUE" })} label="Continue" color={COLORS.gold} />
+              : <ActionButton onClick={() => dispatch({ type: "DEAL_HAND" })} label={stage === "idle" ? "Deal Hand" : "Deal Next Hand"} color={COLORS.gold} />}
+          </div>
+        )}
+
+        {(stage === "idle" || stage === "resolved") && <Scoreboard players={players} prevStacks={state.prevStacks} lastHandResult={state.lastHandResult} />}
+
+        {stage === "betting" && (
+          <div style={{ background: COLORS.panel, border: `1px solid ${COLORS.border}`, borderRadius: 8, padding: 16 }}>
+            <div style={{ fontSize: 11, opacity: .65, textTransform: "uppercase", letterSpacing: 1.5, marginBottom: 8 }}>Board — {street}</div>
+            <div style={{ display: "flex", gap: 6, marginBottom: 18, minHeight: 50, flexWrap: "wrap" }}>
+              {board.map((c, i) => <CardView key={i} card={c} />)}
+              {!board.length && <span style={{ opacity: .4, fontSize: 13, alignSelf: "center" }}>— pre-flop —</span>}
+            </div>
+
+            <div style={{ fontSize: 11, opacity: .65, textTransform: "uppercase", letterSpacing: 1.5, marginBottom: 8 }}>Your hand</div>
+            <div style={{ display: "flex", gap: 6, marginBottom: 14 }}>
+              {you.hole.map((c, i) => <CardView key={i} card={c} />)}
+            </div>
+
+            <div style={{ fontSize: 13, opacity: .85, marginBottom: 8 }}>
+              Pot: <strong>{pot}</strong> &nbsp;•&nbsp; Opponents still in: {opponentsLeft}
+            </div>
+            <div style={{ fontSize: 13, marginBottom: 14, color: COLORS.gold }}>
+              You've put in this hand: <strong>{you.chipsInHand}</strong>
+            </div>
+            <div style={{ fontSize: 11, opacity: .55, marginBottom: 14 }}>
+              "Raise to X" is this street's bet level. Your hand total above adds up every street.
+            </div>
+
+            {postedBlind > 0 && (
+              <div style={{ marginBottom: 16, padding: "10px 14px", background: "#3a2a1a44", border: `1px solid ${COLORS.border}`, borderRadius: 6, fontSize: 13 }}>
+                You posted a blind — included in the total above.
+              </div>
+            )}
+
+            {you.stack > 0 ? (
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 14 }}>
+                <ActionButton onClick={() => dispatch({ type: "PLAYER_ACTION", action: "fold" })} label="Fold" color="#8a3a3a" />
+                {toCall === 0
+                  ? <ActionButton onClick={() => dispatch({ type: "PLAYER_ACTION", action: "check" })} label="Check (0)" color="#3a5a8a" />
+                  : <ActionButton onClick={() => dispatch({ type: "PLAYER_ACTION", action: "call" })} label={`Call (${Math.min(toCall, you.stack)})`} color="#3a5a8a" />}
+                <ActionButton onClick={() => dispatch({ type: "PLAYER_ACTION", action: "raise", raiseBy: 50 })} label={`Raise to ${Math.min(toCall + 50, you.stack)}`} color="#7a8a3a" />
+                <ActionButton onClick={() => dispatch({ type: "PLAYER_ACTION", action: "raise", raiseBy: 100 })} label={`Raise to ${Math.min(toCall + 100, you.stack)}`} color="#8a7a3a" />
+                <ActionButton onClick={() => dispatch({ type: "EXPLAIN" })} label="Explain" color="#5a4a7a" />
+              </div>
+            ) : (
+              <div style={{ fontSize: 13, opacity: .7, marginBottom: 14 }}>
+                No chips left — <button onClick={() => dispatch({ type: "PLAYER_ACTION", action: "fold" })} style={{ background: "none", border: "none", color: COLORS.gold, textDecoration: "underline", cursor: "pointer", fontFamily: "inherit", fontSize: 13 }}>fold</button> to continue.
+              </div>
+            )}
+
+            {explainer && (
+              <div style={{ padding: "12px 14px", background: "#3a2a5a33", border: "1px solid #9a7ad455", borderRadius: 6, fontSize: 13, lineHeight: 1.7 }}>
+                {explainer.map((l, i) => <div key={i} style={{ marginBottom: 6, fontWeight: l.startsWith("Do:") ? "bold" : "normal", color: l.startsWith("Do:") ? COLORS.gold : "inherit" }}>{l}</div>)}
+              </div>
+            )}
+          </div>
+        )}
+
+        <LogPanel log={log} />
+        <TierTable currentTier={currentTier} />
+      </div>
+    </div>
+  );
+}
+
+
+ReactDOM.createRoot(document.getElementById("root")).render(<PokerTrainer />);
+</script>
+</body>
+</html>
