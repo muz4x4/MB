@@ -7,7 +7,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>BTC Board</title>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;700&family=Space+Grotesk:wght@400;500;600;700&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;700&family=Space+Grotesk:wght@400;500;600;700&family=Silkscreen:wght@400;700&display=swap');
   :root{ --bg:#000; --panel:#050505; --line:#1A1A1A; --ink:#FFD400; --ink-dim:#5A5A5A; --amber:#2DA6FF; --up:#39FF14; --down:#FF1E3C; }
   *{ box-sizing:border-box; margin:0; padding:0; }
   html,body{ height:100%; background:var(--bg); color:var(--ink); overflow:hidden; font-family:'Space Grotesk',sans-serif; }
@@ -26,15 +26,18 @@
   .hero-sub{ margin-top:4px; font-size:12px; color:var(--ink-dim); font-family:'Roboto Mono',monospace; flex-shrink:0; }
   .spark-wrap{ margin-top:10px; margin-bottom:24px; flex:1; min-height:0; position:relative; }
   .spark-wrap svg{ width:100%; height:100%; overflow:visible; position:relative; z-index:1; }
+  #sparkAreaPath, #sparkLinePath{ transition: d 0.8s ease-out; }
+  .grid-line{ transition: x1 0.8s ease-out, x2 0.8s ease-out, y1 0.8s ease-out; }
   .spark-label{ font-family:'Roboto Mono',monospace; font-weight:700; font-size:clamp(10px,2.6vw,24px); color:var(--amber); letter-spacing:.04em; margin-top:6px; flex-shrink:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   .xaxis-wrap{ position:relative; height:20px; margin-top:4px; flex-shrink:0; }
-  .xaxis-tick{ position:absolute; top:0; font-family:'Roboto Mono',monospace; font-size:12px; color:var(--ink-dim); white-space:nowrap; }
+  .xaxis-tick{ position:absolute; top:0; font-family:'Roboto Mono',monospace; font-size:12px; color:var(--ink-dim); white-space:nowrap; transition:left 0.8s ease-out, right 0.8s ease-out; }
 
   .spark-callout{
     position:absolute; z-index:3;
     background:#141414; border:1px solid #555555; border-radius:6px;
     padding:5px 12px; font-family:'Roboto Mono',monospace; font-weight:600; font-size:clamp(15px,1.8vw,20px); color:#F2F2F2;
     white-space:nowrap; pointer-events:none; display:none;
+    transition:left 0.8s ease-out, top 0.8s ease-out;
   }
   .spark-callout.show{ display:block; }
   .spark-callout.below{ transform:translate(-50%,10px); }
@@ -45,6 +48,15 @@
 
   #app.sleep-mode:not(.peek){ background:#000; }
   #app.sleep-mode:not(.peek) > *{ visibility:hidden; }
+
+  /* LED matrix look: pixel font + fine dot grid, matching a small-pitch physical LED ticker */
+  #app.matrix-mode{ border:14px solid; border-image:linear-gradient(135deg,#9a9a9a,#4a4a4a 40%,#2a2a2a 60%,#9a9a9a) 1; box-shadow:inset 0 0 30px rgba(0,0,0,.7); }
+  #app.matrix-mode .ticker-badge, #app.matrix-mode .hero-price, #app.matrix-mode .hero-change, #app.matrix-mode .clock{ font-family:'Silkscreen',monospace; letter-spacing:.02em; }
+  #app.matrix-mode::after{
+    content:""; position:fixed; inset:0; pointer-events:none; z-index:5;
+    background-image:radial-gradient(circle, rgba(0,0,0,.65) 0.6px, transparent 1px);
+    background-size:3px 3px; mix-blend-mode:multiply;
+  }
 
   .backdrop{ position:fixed; inset:0; background:rgba(0,0,0,.55); opacity:0; pointer-events:none; transition:opacity .25s; z-index:10; }
   .backdrop.open{ opacity:1; pointer-events:auto; }
@@ -78,7 +90,22 @@
     <div class="change-row"><div class="hero-change" id="heroChange"></div></div>
     <div class="hero-sub" id="heroSub"></div>
     <div class="spark-wrap">
-      <svg id="sparkSvg" viewBox="0 0 600 70" preserveAspectRatio="none"></svg>
+      <svg id="sparkSvg" viewBox="0 0 600 70" preserveAspectRatio="none">
+        <defs><linearGradient id="sf" x1="0" y1="0" x2="0" y2="1">
+          <stop id="sfStop0" offset="0%" stop-color="#39FF14" stop-opacity="0.42"/>
+          <stop id="sfStop1" offset="100%" stop-color="#39FF14" stop-opacity="0.05"/>
+        </linearGradient></defs>
+        <path id="sparkAreaPath" fill="url(#sf)" stroke="none" d=""/>
+        <line class="grid-line" id="gridLine0" x1="0" y1="0" x2="0" y2="70" stroke="rgba(255,255,255,0.22)" stroke-width="1" style="display:none"/>
+        <line class="grid-line" id="gridLine1" x1="0" y1="0" x2="0" y2="70" stroke="rgba(255,255,255,0.22)" stroke-width="1" style="display:none"/>
+        <line class="grid-line" id="gridLine2" x1="0" y1="0" x2="0" y2="70" stroke="rgba(255,255,255,0.22)" stroke-width="1" style="display:none"/>
+        <line class="grid-line" id="gridLine3" x1="0" y1="0" x2="0" y2="70" stroke="rgba(255,255,255,0.22)" stroke-width="1" style="display:none"/>
+        <line class="grid-line" id="gridLine4" x1="0" y1="0" x2="0" y2="70" stroke="rgba(255,255,255,0.22)" stroke-width="1" style="display:none"/>
+        <line class="grid-line" id="gridLine5" x1="0" y1="0" x2="0" y2="70" stroke="rgba(255,255,255,0.22)" stroke-width="1" style="display:none"/>
+        <line class="grid-line" id="gridLine6" x1="0" y1="0" x2="0" y2="70" stroke="rgba(255,255,255,0.22)" stroke-width="1" style="display:none"/>
+        <line class="grid-line" id="gridLine7" x1="0" y1="0" x2="0" y2="70" stroke="rgba(255,255,255,0.22)" stroke-width="1" style="display:none"/>
+        <path id="sparkLinePath" fill="none" stroke="#39FF14" stroke-width="1.3" stroke-linejoin="round" stroke-linecap="round" d=""/>
+      </svg>
       <div class="spark-callout above" id="sparkMaxLabel"></div>
       <div class="spark-callout below" id="sparkMinLabel"></div>
     </div>
@@ -88,7 +115,7 @@
 
   <footer>
     <span id="lastUpdated">Not yet updated</span>
-    <span id="buildStamp">build 2026-08-24-final</span>
+    <span id="buildStamp">build 2026-08-25-a</span>
   </footer>
 </div>
 
@@ -111,21 +138,20 @@
       <option value="30">30 Days</option>
       <option value="365">1 Year</option>
     </select>
+    <div class="hint">Price updates automatically as fast as CoinGecko's own data refreshes (about once a minute) — no separate refresh-rate setting needed.</div>
   </div>
 
   <div class="field">
-    <label>Refresh interval (seconds)</label>
-    <select id="intervalSelect">
-      <option value="10">10</option>
-      <option value="30">30</option>
-      <option value="60">60</option>
-    </select>
+    <div class="row-add">
+      <input type="checkbox" id="matrixMode" style="width:20px;height:20px;flex:0 0 auto;accent-color:var(--amber);">
+      <span style="font-size:13px;color:var(--ink-dim);">LED matrix look (fine pixel grid + bezel)</span>
+    </div>
   </div>
 
   <div class="field">
     <label>CoinGecko Demo API key</label>
     <input type="password" id="cgKeyInput" placeholder="paste key here" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">
-    <div class="hint">Optional — raises your rate limit for faster refresh.</div>
+    <div class="hint">Optional — raises your rate limit.</div>
   </div>
 
   <div class="field">
@@ -145,10 +171,9 @@
 </div>
 
 <script>
-const STORAGE_KEY = 'btcboard-v2-settings';
-const DEFAULTS = { currency:'usd', chartRange:'1', interval:10, cgApiKey:'', sleepEnabled:false, sleepStart:'21:30', sleepEnd:'05:30' };
+const STORAGE_KEY = 'btcboard-v3-settings';
+const DEFAULTS = { currency:'usd', chartRange:'1', matrixMode:false, cgApiKey:'', sleepEnabled:false, sleepStart:'21:30', sleepEnd:'05:30' };
 let settings = { ...DEFAULTS };
-let priceTimer = null;
 let lastSparkPoints = [];
 
 function testStorage(){
@@ -167,11 +192,12 @@ function loadSettings(){
   }
   document.getElementById('currencySelect').value = settings.currency;
   document.getElementById('rangeSelect').value = settings.chartRange;
-  document.getElementById('intervalSelect').value = String(settings.interval);
+  document.getElementById('matrixMode').checked = settings.matrixMode;
   document.getElementById('cgKeyInput').value = settings.cgApiKey;
   document.getElementById('sleepEnabled').checked = settings.sleepEnabled;
   document.getElementById('sleepStart').value = settings.sleepStart;
   document.getElementById('sleepEnd').value = settings.sleepEnd;
+  document.getElementById('app').classList.toggle('matrix-mode', settings.matrixMode);
 }
 function saveSettings(){ try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(settings)); }catch(e){} }
 
@@ -186,13 +212,13 @@ function closeDrawer(){
 document.getElementById('backdrop').onclick = closeDrawer;
 document.getElementById('closeDrawer').onclick = closeDrawer;
 
-document.getElementById('currencySelect').onchange = (e)=>{ settings.currency=e.target.value; saveSettings(); tick(); fetchSparkline(); };
+document.getElementById('currencySelect').onchange = (e)=>{ settings.currency=e.target.value; saveSettings(); resetToFastPoll(); fetchSparkline(); };
 document.getElementById('rangeSelect').onchange = (e)=>{ settings.chartRange=e.target.value; saveSettings(); fetchSparkline(); };
-document.getElementById('intervalSelect').onchange = (e)=>{ settings.interval=parseInt(e.target.value,10); saveSettings(); restartPriceTimer(); };
+document.getElementById('matrixMode').onchange = (e)=>{ settings.matrixMode=e.target.checked; document.getElementById('app').classList.toggle('matrix-mode', settings.matrixMode); saveSettings(); };
 document.getElementById('sleepEnabled').onchange = (e)=>{ settings.sleepEnabled=e.target.checked; saveSettings(); };
 document.getElementById('sleepStart').onchange = (e)=>{ settings.sleepStart=e.target.value||DEFAULTS.sleepStart; saveSettings(); };
 document.getElementById('sleepEnd').onchange = (e)=>{ settings.sleepEnd=e.target.value||DEFAULTS.sleepEnd; saveSettings(); };
-document.getElementById('cgKeyInput').addEventListener('blur', ()=>{ settings.cgApiKey = document.getElementById('cgKeyInput').value.trim(); saveSettings(); });
+document.getElementById('cgKeyInput').addEventListener('blur', ()=>{ settings.cgApiKey = document.getElementById('cgKeyInput').value.trim(); saveSettings(); resetToFastPoll(); });
 
 function timeToMinutes(s){ const [h,m]=s.split(':').map(Number); return h*60+m; }
 function isSleepNow(){
@@ -208,8 +234,8 @@ function updateSleepState(){
   app.classList.toggle('sleep-mode', asleep);
   if(asleep===wasAsleep) return;
   wasAsleep = asleep;
-  if(asleep){ if(priceTimer) clearInterval(priceTimer); }
-  else{ restartPriceTimer(); tick(); fetchSparkline(); app.classList.remove('peek'); }
+  if(asleep){ if(pollTimer) clearTimeout(pollTimer); }
+  else{ resetToFastPoll(); fetchSparkline(); app.classList.remove('peek'); }
 }
 document.getElementById('app').addEventListener('click', ()=>{
   const app = document.getElementById('app');
@@ -229,8 +255,44 @@ function fmtMoney(n, currency){
   return symbol + n.toLocaleString('en-AU',{minimumFractionDigits:decimals,maximumFractionDigits:decimals});
 }
 
-const RANGE_WINDOW_MS = { '1h':3600*1000, '1':86400*1000, '7':7*86400*1000, '30':30*86400*1000, '365':365*86400*1000 };
+// ============================================================
+// ADAPTIVE POLLING
+// CoinGecko's own server data only actually refreshes about once
+// a minute regardless of how often we ask. So: poll every 10s
+// until the returned price actually changes (catching the refresh
+// promptly), then relax to once every 60s until something forces
+// a re-sync (a settings change, or simply every hour as a safety
+// net in case we ever drift out of phase).
+// ============================================================
+let pollMode = 'fast';
+let lastKnownPrice = null;
+let pollTimer = null;
+
+function scheduleNextPoll(){
+  if(pollTimer) clearTimeout(pollTimer);
+  const delay = pollMode === 'fast' ? 10000 : 60000;
+  pollTimer = setTimeout(runPollCycle, delay);
+}
+async function runPollCycle(){
+  await tick();
+  scheduleNextPoll();
+}
+function resetToFastPoll(){
+  pollMode = 'fast';
+  if(pollTimer) clearTimeout(pollTimer);
+  runPollCycle();
+}
+setInterval(resetToFastPoll, 3600*1000); // hourly safety re-sync
+
+// ============================================================
+// PRICE FETCH
+// ============================================================
+const RANGE_WINDOW_MS = { '1h':3600*1000, '1':86400*1000 };
 const MAX_POINTS = 400;
+// Only 1H and 24H are live-updated between full chart refetches — on
+// longer ranges a single new point wouldn't move the line enough to
+// notice, so it's wasted work; those just refresh every 5 minutes.
+function isLiveGraphRange(){ return settings.chartRange === '1h' || settings.chartRange === '1'; }
 
 async function tick(){
   document.getElementById('heroSub').textContent = 'fetching...';
@@ -242,16 +304,20 @@ async function tick(){
     const data = await res.json();
     const btc = data.bitcoin;
     if(!btc || btc[vs]===undefined) throw new Error('bad response');
-    document.getElementById('heroPrice').textContent = fmtMoney(btc[vs], vs);
+
+    const priceNow = btc[vs];
+    if(lastKnownPrice !== null && priceNow !== lastKnownPrice){
+      pollMode = 'slow'; // confirmed the server's data just refreshed — no need to hammer it now
+    }
+    lastKnownPrice = priceNow;
+
+    document.getElementById('heroPrice').textContent = fmtMoney(priceNow, vs);
     document.getElementById('heroSub').textContent = 'ok ' + new Date().toLocaleTimeString('en-AU',{hour12:false});
 
-    if(lastSparkPoints.length){
-      // append the live tick rather than overwrite the last point, then drop
-      // anything that's aged out of the selected window — this is what makes
-      // the graph appear to drift slowly leftward as time passes
+    if(isLiveGraphRange() && lastSparkPoints.length){
       const now = Date.now();
-      lastSparkPoints.push([now, btc[vs]]);
-      const windowMs = RANGE_WINDOW_MS[settings.chartRange] || RANGE_WINDOW_MS['1'];
+      lastSparkPoints.push([now, priceNow]);
+      const windowMs = RANGE_WINDOW_MS[settings.chartRange];
       const cutoff = now - windowMs;
       lastSparkPoints = lastSparkPoints.filter(p => p[0] >= cutoff);
       if(lastSparkPoints.length > MAX_POINTS){
@@ -270,50 +336,65 @@ async function fetchSparkline(){
     let url;
     if(settings.chartRange === '1h'){
       const nowSec = Math.floor(Date.now()/1000);
-      const fromSec = nowSec - 3600;
-      url = `https://api.coingecko.com/api/v3/coins/bitcoin/market_chart/range?vs_currency=${settings.currency}&from=${fromSec}&to=${nowSec}&precision=2`;
+      url = `https://api.coingecko.com/api/v3/coins/bitcoin/market_chart/range?vs_currency=${settings.currency}&from=${nowSec-3600}&to=${nowSec}&precision=2`;
     }else{
       url = `https://api.coingecko.com/api/v3/coins/bitcoin/market_chart?vs_currency=${settings.currency}&days=${settings.chartRange}&precision=2`;
     }
     if(settings.cgApiKey) url += `&x_cg_demo_api_key=${encodeURIComponent(settings.cgApiKey)}`;
     const res = await fetch(url);
     const data = await res.json();
-    // full refetch resyncs to ground truth, correcting any drift the
-    // between-fetch live-append/prune approach introduces
     lastSparkPoints = data.prices || [];
     drawSparkline(lastSparkPoints);
   }catch(e){ console.error('sparkline failed', e); }
 }
 
-const TICK_COUNT = 5;
+// ============================================================
+// GRAPH: tick alignment (clean calendar boundaries, count 4-8 by width)
+// ============================================================
 const DAY_MS = 24*3600*1000;
 const HOUR_MS = 3600*1000;
 
-// Every timeframe's ticks land on a meaningful calendar boundary in local
-// time: 24H → exact hours, 7D → midnight each day, 30D → Monday midnights,
-// 1Y → the 1st of every second month.
+function getDesiredTickCount(){
+  const w = document.getElementById('app').clientWidth || window.innerWidth;
+  if(w < 500) return 4;
+  if(w < 800) return 6;
+  return 8;
+}
+function localMidnight(t){ const d = new Date(t); d.setHours(0,0,0,0); return d.getTime(); }
+
 function buildTickTimestamps(tMin, tMax, chartRange){
   const targets = [];
+  const desired = getDesiredTickCount();
+
   if(chartRange === '1h'){
-    const TEN_MIN = 10*60*1000;
-    let t = Math.ceil(tMin/TEN_MIN)*TEN_MIN;
-    while(t <= tMax){ targets.push(t); t += TEN_MIN; }
-  }else if(chartRange === '1'){
-    const step = 6*HOUR_MS; // 6-hour spacing gives ~5 ticks across 24h
-    let t = Math.ceil(tMin/HOUR_MS)*HOUR_MS;
+    // clean minute boundaries (e.g. 6:10, 6:20, 6:30)
+    const stepMin = desired <= 4 ? 15 : (desired <= 6 ? 12 : 10);
+    const step = stepMin*60*1000;
+    let t = localMidnight(tMin);
+    while(t < tMin) t += step;
     while(t <= tMax){ targets.push(t); t += step; }
+
+  }else if(chartRange === '1'){
+    // clean hour boundaries (e.g. 12:00am, 6:00am, 12:00pm, 6:00pm)
+    const stepHours = desired <= 4 ? 6 : (desired <= 6 ? 4 : 3);
+    const step = stepHours*HOUR_MS;
+    let t = localMidnight(tMin);
+    while(t < tMin) t += step;
+    while(t <= tMax){ targets.push(t); t += step; }
+
   }else if(chartRange === '7'){
-    let d = new Date(tMin); d.setHours(0,0,0,0);
-    let t = d.getTime();
+    let t = localMidnight(tMin);
     if(t < tMin) t += DAY_MS;
-    while(t <= tMax){ targets.push(t); t += DAY_MS; }
+    const stepDays = desired < 7 ? 2 : 1;
+    while(t <= tMax){ targets.push(t); t += stepDays*DAY_MS; }
+
   }else if(chartRange === '30'){
     let d = new Date(tMin); d.setHours(0,0,0,0);
-    const day = d.getDay(); // 0=Sun,1=Mon,...6=Sat
-    const daysUntilMonday = (8 - day) % 7;
-    d.setDate(d.getDate() + daysUntilMonday);
+    const day = d.getDay();
+    d.setDate(d.getDate() + ((8 - day) % 7)); // next Monday
     let t = d.getTime();
     while(t <= tMax){ targets.push(t); t += 7*DAY_MS; }
+
   }else{
     let d = new Date(tMin); d.setDate(1); d.setHours(0,0,0,0);
     if(d.getTime() < tMin) d.setMonth(d.getMonth()+1);
@@ -340,8 +421,11 @@ function getTickIndices(points, chartRange){
   return Array.from(idxSet).sort((a,b)=>a-b);
 }
 
+// ============================================================
+// GRAPH: marker bubble positioning (measured synchronously so it's
+// always exactly accurate, with no lag as the graph updates)
+// ============================================================
 function positionCallout(el, xPct, yPct, side){
-  // side: 'above' (high marker) or 'below' (low marker)
   el.classList.remove('above','below');
   el.classList.add(side);
   el.style.left = xPct + '%';
@@ -349,18 +433,13 @@ function positionCallout(el, xPct, yPct, side){
   el.style.transform = `translate(-50%, ${side === 'below' ? '10px' : 'calc(-100% - 10px)'})`;
   el.style.setProperty('--arrow-left', '50%');
 
-  // Measure and correct immediately (synchronously) rather than waiting a
-  // frame — calling getBoundingClientRect forces the browser to apply the
-  // layout for what was just set above, so this reads the true, current
-  // position with no delay and no chance of a stale reading as the graph
-  // keeps updating.
   const container = el.parentElement;
   if(!container) return;
   const containerRect = container.getBoundingClientRect();
-  const targetX = containerRect.left + (xPct/100) * containerRect.width; // exact pixel position of the data point
+  const targetX = containerRect.left + (xPct/100) * containerRect.width;
   const bubbleWidth = el.getBoundingClientRect().width;
   const margin = 6;
-  let bubbleLeft = targetX - bubbleWidth/2; // default: centered on the point
+  let bubbleLeft = targetX - bubbleWidth/2;
   const minLeft = containerRect.left + margin;
   const maxLeft = containerRect.left + containerRect.width - bubbleWidth - margin;
   if(bubbleLeft < minLeft) bubbleLeft = minLeft;
@@ -370,8 +449,6 @@ function positionCallout(el, xPct, yPct, side){
   el.style.left = leftPx + 'px';
   el.style.transform = `translate(0, ${side === 'below' ? '10px' : 'calc(-100% - 10px)'})`;
 
-  // arrow sits at the true point's position within the bubble, clamped
-  // so it never renders outside the bubble's rounded corners
   let arrowOffset = targetX - bubbleLeft;
   const arrowMin = 10, arrowMax = bubbleWidth - 10;
   if(arrowOffset < arrowMin) arrowOffset = arrowMin;
@@ -379,25 +456,31 @@ function positionCallout(el, xPct, yPct, side){
   el.style.setProperty('--arrow-left', arrowOffset + 'px');
 }
 
+// ============================================================
+// GRAPH: main draw — updates persistent SVG/DOM elements in place
+// (rather than rebuilding from scratch) so CSS transitions can
+// animate between old and new positions, giving a smooth glide
+// instead of an abrupt jump each time new data arrives.
+// ============================================================
 function drawSparkline(points){
-  const svg = document.getElementById('sparkSvg');
+  const areaPathEl = document.getElementById('sparkAreaPath');
+  const linePathEl = document.getElementById('sparkLinePath');
   const maxLabel = document.getElementById('sparkMaxLabel');
   const minLabel = document.getElementById('sparkMinLabel');
+
   if(!points || points.length < 2){
-    svg.innerHTML='';
+    areaPathEl.setAttribute('d','');
+    linePathEl.setAttribute('d','');
     maxLabel.classList.remove('show');
     minLabel.classList.remove('show');
     return;
   }
+
   const prices = points.map(p=>p[1]);
   const min = Math.min(...prices), max = Math.max(...prices);
   const range = (max-min) || 1;
   const W=600,H=70,PAD=4;
 
-  // x position is based on each point's actual timestamp, not its array
-  // index — this matters because historical data (e.g. 5-minute buckets)
-  // and live-appended ticks (e.g. every 10s) aren't evenly spaced in time,
-  // so index-based spacing would visually distort the line
   const tMin = points[0][0], tMax = points[points.length-1][0];
   const tSpan = (tMax - tMin) || 1;
   const coords = points.map(p=>{
@@ -408,39 +491,41 @@ function drawSparkline(points){
   const linePath = coords.map((c,i)=>(i===0?'M':'L')+c[0].toFixed(1)+','+c[1].toFixed(1)).join(' ');
   const areaPath = linePath + ` L${W},${H} L0,${H} Z`;
   const up = prices[prices.length-1] >= prices[0];
-  const stroke = up ? 'var(--up)' : 'var(--down)';
+  const colorHex = up ? '#39FF14' : '#FF1E3C';
 
   let maxIdx = 0, minIdx = 0;
   prices.forEach((p,i)=>{ if(p > prices[maxIdx]) maxIdx = i; if(p < prices[minIdx]) minIdx = i; });
 
-  // grid lines rising from each x-axis tick position up to the price line
-  // itself (not above it), so it's obvious exactly where each time label
-  // lines up on the graph
+  areaPathEl.setAttribute('d', areaPath);
+  linePathEl.setAttribute('d', linePath);
+  linePathEl.setAttribute('stroke', colorHex);
+  document.getElementById('sfStop0').setAttribute('stop-color', colorHex);
+  document.getElementById('sfStop1').setAttribute('stop-color', colorHex);
+
+  // grid lines: fixed pool of 8 persistent <line> elements, reused and
+  // repositioned each draw (rather than recreated) so they can transition
+  // smoothly, with unused ones hidden
   const tickIndices = getTickIndices(points, settings.chartRange);
-  const gridLines = tickIndices.map(idx=>{
-    const x = coords[idx][0].toFixed(1);
-    const yTop = coords[idx][1].toFixed(1);
-    return `<line x1="${x}" y1="${yTop}" x2="${x}" y2="${H}" stroke="rgba(255,255,255,0.22)" stroke-width="1"/>`;
-  }).join('');
+  for(let i=0; i<8; i++){
+    const lineEl = document.getElementById('gridLine'+i);
+    if(i < tickIndices.length){
+      const idx = tickIndices[i];
+      lineEl.setAttribute('x1', coords[idx][0].toFixed(1));
+      lineEl.setAttribute('x2', coords[idx][0].toFixed(1));
+      lineEl.setAttribute('y1', coords[idx][1].toFixed(1));
+      lineEl.setAttribute('y2', H);
+      lineEl.style.display = '';
+    }else{
+      lineEl.style.display = 'none';
+    }
+  }
 
-  // area fill drawn first (bottom layer), then grid lines on top of the
-  // fill so they stay visible through it, then the line itself on top
-  svg.innerHTML = `
-    <defs><linearGradient id="sf" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="${up?'#39FF14':'#FF1E3C'}" stop-opacity="0.42"/>
-      <stop offset="100%" stop-color="${up?'#39FF14':'#FF1E3C'}" stop-opacity="0.05"/>
-    </linearGradient></defs>
-    <path d="${areaPath}" fill="url(#sf)" stroke="none"/>
-    ${gridLines}
-    <path d="${linePath}" fill="none" stroke="${stroke}" stroke-width="1.3" stroke-linejoin="round" stroke-linecap="round"/>
-  `;
-
-  maxLabel.textContent = fmtMoney(max, settings.currency);
   positionCallout(maxLabel, (coords[maxIdx][0]/W)*100, (coords[maxIdx][1]/H)*100, 'above');
+  maxLabel.textContent = fmtMoney(max, settings.currency);
   maxLabel.classList.add('show');
 
-  minLabel.textContent = fmtMoney(min, settings.currency);
   positionCallout(minLabel, (coords[minIdx][0]/W)*100, (coords[minIdx][1]/H)*100, 'below');
+  minLabel.textContent = fmtMoney(min, settings.currency);
   minLabel.classList.add('show');
 
   const rangeLabels = {'1h':'1H','1':'24H','7':'7D','30':'30D','365':'1Y'};
@@ -469,32 +554,42 @@ function formatXAxisTick(ts, chartRange){
   }
 }
 
-function drawXAxis(points, tickIndices, coords, W){
+// fixed pool of 8 label elements, reused each draw for the same reason
+// as the grid lines — enables smooth transitions instead of jump cuts
+function ensureXAxisPool(){
   const wrap = document.getElementById('xaxisWrap');
+  if(wrap.children.length === 8) return;
   wrap.innerHTML = '';
-  if(!points || points.length < 2) return;
-  tickIndices.forEach((idx)=>{
-    const pct = (coords[idx][0]/W) * 100; // matches the line's own time-based x position exactly
+  for(let i=0; i<8; i++){
     const span = document.createElement('span');
     span.className = 'xaxis-tick';
-    span.textContent = formatXAxisTick(points[idx][0], settings.chartRange);
-    // edge-anchor near the very ends so a label never gets clipped off-screen,
-    // otherwise centre it on its exact calendar-aligned position
-    if(pct < 4){
-      span.style.left = '0%';
-    }else if(pct > 96){
-      span.style.right = '0%';
-    }else{
-      span.style.left = pct + '%';
-      span.style.transform = 'translateX(-50%)';
-    }
+    span.id = 'xTick'+i;
+    span.style.display = 'none';
     wrap.appendChild(span);
-  });
+  }
 }
 
-function restartPriceTimer(){
-  if(priceTimer) clearInterval(priceTimer);
-  priceTimer = setInterval(tick, settings.interval*1000);
+function drawXAxis(points, tickIndices, coords, W){
+  ensureXAxisPool();
+  for(let i=0; i<8; i++){
+    const span = document.getElementById('xTick'+i);
+    if(i < tickIndices.length){
+      const idx = tickIndices[i];
+      const pct = (coords[idx][0]/W) * 100;
+      span.textContent = formatXAxisTick(points[idx][0], settings.chartRange);
+      span.style.display = '';
+      span.style.right = '';
+      if(pct < 4){
+        span.style.left = '0%'; span.style.transform = '';
+      }else if(pct > 96){
+        span.style.left = ''; span.style.right = '0%'; span.style.transform = '';
+      }else{
+        span.style.left = pct + '%'; span.style.transform = 'translateX(-50%)';
+      }
+    }else{
+      span.style.display = 'none';
+    }
+  }
 }
 
 let wakeLock = null;
@@ -505,9 +600,10 @@ async function requestWakeLock(){
 document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState==='visible') requestWakeLock(); });
 requestWakeLock();
 
+window.addEventListener('resize', ()=>{ if(lastSparkPoints.length >= 2) drawSparkline(lastSparkPoints); });
+
 loadSettings();
-restartPriceTimer();
-tick();
+resetToFastPoll();
 fetchSparkline();
 </script>
 </body>
