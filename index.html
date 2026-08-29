@@ -19,6 +19,8 @@
   .price-row{ display:flex; align-items:baseline; justify-content:space-between; gap:20px; flex-wrap:nowrap; min-width:0; flex-shrink:0; }
   .ticker-badge{ font-family:'Roboto Mono',monospace; font-weight:700; letter-spacing:.02em; color:var(--amber); font-size:clamp(32px,9vw,100px); line-height:1; white-space:nowrap; flex-shrink:0; }
   .hero-price{ font-family:'Roboto Mono',monospace; font-size:clamp(32px,9vw,100px); color:var(--ink); white-space:nowrap; min-width:0; text-align:right; }
+  .price-timer-track{ display:flex; justify-content:flex-end; width:100%; height:3px; background:rgba(255,255,255,0.08); overflow:hidden; flex-shrink:0; border-radius:2px; }
+  .price-timer-bar{ height:100%; width:100%; background:var(--amber); }
   .change-row{ display:flex; justify-content:space-between; align-items:baseline; flex-shrink:0; margin-top:6px; }
   .hero-sub{ font-size:12px; color:var(--ink-dim); font-family:'Roboto Mono',monospace; flex-shrink:0; }
   .hero-change{ font-family:'Roboto Mono',monospace; font-weight:700; font-size:clamp(16px,2.6vw,28px); margin-top:2px; }
@@ -91,6 +93,7 @@
       <div class="ticker-badge">BTC</div>
       <div class="hero-price" id="heroPrice">waiting...</div>
     </div>
+    <div class="price-timer-track"><div class="price-timer-bar" id="priceTimerBar"></div></div>
     <div class="change-row">
       <div class="hero-sub" id="heroSub"></div>
       <div class="hero-change" id="heroChange"></div>
@@ -285,9 +288,19 @@ let pollMode = 'fast';
 let lastKnownPrice = null;
 let pollTimer = null;
 
+function startCountdownBar(durationMs){
+  const bar = document.getElementById('priceTimerBar');
+  bar.style.transition = 'none';
+  bar.style.width = '100%';
+  void bar.offsetWidth; // force reflow so the reset above actually takes effect before re-enabling the transition
+  bar.style.transition = `width ${durationMs}ms linear`;
+  requestAnimationFrame(()=>{ bar.style.width = '0%'; });
+}
+
 function scheduleNextPoll(){
   if(pollTimer) clearTimeout(pollTimer);
   const delay = pollMode === 'fast' ? 10000 : 60000;
+  startCountdownBar(delay);
   pollTimer = setTimeout(runPollCycle, delay);
 }
 async function runPollCycle(){
