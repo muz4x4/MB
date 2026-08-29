@@ -19,15 +19,19 @@
   .price-row{ display:flex; align-items:baseline; justify-content:space-between; gap:20px; flex-wrap:nowrap; min-width:0; flex-shrink:0; }
   .ticker-badge{ font-family:'Roboto Mono',monospace; font-weight:700; letter-spacing:.02em; color:var(--amber); font-size:clamp(32px,9vw,100px); line-height:1; white-space:nowrap; flex-shrink:0; }
   .hero-price{ font-family:'Roboto Mono',monospace; font-size:clamp(32px,9vw,100px); color:var(--ink); white-space:nowrap; min-width:0; text-align:right; }
-  .change-row{ display:flex; justify-content:flex-end; flex-shrink:0; }
+  .change-row{ display:flex; justify-content:space-between; align-items:baseline; flex-shrink:0; margin-top:6px; }
+  .hero-sub{ font-size:12px; color:var(--ink-dim); font-family:'Roboto Mono',monospace; flex-shrink:0; }
   .hero-change{ font-family:'Roboto Mono',monospace; font-weight:700; font-size:clamp(16px,2.6vw,28px); margin-top:2px; }
   .hero-change.up{ color:var(--up); }
   .hero-change.down{ color:var(--down); }
-  .hero-sub{ margin-top:4px; font-size:12px; color:var(--ink-dim); font-family:'Roboto Mono',monospace; flex-shrink:0; }
+  .hero-sub{ font-size:12px; color:var(--ink-dim); font-family:'Roboto Mono',monospace; flex-shrink:0; }
   .spark-wrap{ margin-top:10px; margin-bottom:24px; flex:1; min-height:0; position:relative; }
   .spark-wrap svg{ width:100%; height:100%; overflow:visible; position:relative; z-index:1; }
   #sparkAreaPath, #sparkLinePath{ transition: d 0.8s ease-out; }
   .grid-line{ transition: x1 0.8s ease-out, x2 0.8s ease-out, y1 0.8s ease-out; }
+  .range-tabs{ display:flex; gap:16px; max-width:55%; flex-shrink:0; margin-bottom:8px; }
+  .range-tab{ font-family:'Roboto Mono',monospace; font-weight:700; font-size:clamp(13px,1.7vw,19px); color:var(--ink-dim); cursor:pointer; padding:4px 2px; border-bottom:2px solid transparent; user-select:none; }
+  .range-tab.active{ color:var(--amber); border-bottom-color:var(--amber); }
   .spark-label{ font-family:'Roboto Mono',monospace; font-weight:700; font-size:clamp(10px,2.6vw,24px); color:var(--amber); letter-spacing:.04em; margin-top:6px; flex-shrink:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   .xaxis-wrap{ position:relative; height:20px; margin-top:4px; flex-shrink:0; }
   .xaxis-tick{ position:absolute; top:0; font-family:'Roboto Mono',monospace; font-size:12px; color:var(--ink-dim); white-space:nowrap; transition:left 0.8s ease-out, right 0.8s ease-out; }
@@ -87,8 +91,17 @@
       <div class="ticker-badge">BTC</div>
       <div class="hero-price" id="heroPrice">waiting...</div>
     </div>
-    <div class="change-row"><div class="hero-change" id="heroChange"></div></div>
-    <div class="hero-sub" id="heroSub"></div>
+    <div class="change-row">
+      <div class="hero-sub" id="heroSub"></div>
+      <div class="hero-change" id="heroChange"></div>
+    </div>
+    <div class="range-tabs" id="rangeTabs">
+      <span class="range-tab" data-range="1h">1H</span>
+      <span class="range-tab" data-range="1">24H</span>
+      <span class="range-tab" data-range="7">7D</span>
+      <span class="range-tab" data-range="30">30D</span>
+      <span class="range-tab" data-range="365">1Y</span>
+    </div>
     <div class="spark-wrap">
       <svg id="sparkSvg" viewBox="0 0 600 70" preserveAspectRatio="none">
         <defs><linearGradient id="sf" x1="0" y1="0" x2="0" y2="1">
@@ -130,15 +143,7 @@
   </div>
 
   <div class="field">
-    <label>Graph timeframe</label>
-    <select id="rangeSelect">
-      <option value="1h">1 Hour</option>
-      <option value="1">24 Hours</option>
-      <option value="7">7 Days</option>
-      <option value="30">30 Days</option>
-      <option value="365">1 Year</option>
-    </select>
-    <div class="hint">Price updates automatically as fast as CoinGecko's own data refreshes (about once a minute) — no separate refresh-rate setting needed.</div>
+    <div class="hint">Price updates automatically as fast as CoinGecko's own data refreshes (about once a minute) — no separate refresh-rate setting needed. Switch graph timeframe using the tabs above the graph itself.</div>
   </div>
 
   <div class="field">
@@ -191,7 +196,7 @@ function loadSettings(){
     }catch(e){ statusEl.textContent = 'Storage read failed: ' + e.message; }
   }
   document.getElementById('currencySelect').value = settings.currency;
-  document.getElementById('rangeSelect').value = settings.chartRange;
+  updateRangeTabs();
   document.getElementById('matrixMode').checked = settings.matrixMode;
   document.getElementById('cgKeyInput').value = settings.cgApiKey;
   document.getElementById('sleepEnabled').checked = settings.sleepEnabled;
@@ -213,7 +218,19 @@ document.getElementById('backdrop').onclick = closeDrawer;
 document.getElementById('closeDrawer').onclick = closeDrawer;
 
 document.getElementById('currencySelect').onchange = (e)=>{ settings.currency=e.target.value; saveSettings(); resetToFastPoll(); fetchSparkline(); };
-document.getElementById('rangeSelect').onchange = (e)=>{ settings.chartRange=e.target.value; saveSettings(); fetchSparkline(); };
+function updateRangeTabs(){
+  document.querySelectorAll('.range-tab').forEach(el=>{
+    el.classList.toggle('active', el.dataset.range === settings.chartRange);
+  });
+}
+document.querySelectorAll('.range-tab').forEach(el=>{
+  el.addEventListener('click', ()=>{
+    settings.chartRange = el.dataset.range;
+    saveSettings();
+    updateRangeTabs();
+    fetchSparkline();
+  });
+});
 document.getElementById('matrixMode').onchange = (e)=>{ settings.matrixMode=e.target.checked; document.getElementById('app').classList.toggle('matrix-mode', settings.matrixMode); saveSettings(); };
 document.getElementById('sleepEnabled').onchange = (e)=>{ settings.sleepEnabled=e.target.checked; saveSettings(); };
 document.getElementById('sleepStart').onchange = (e)=>{ settings.sleepStart=e.target.value||DEFAULTS.sleepStart; saveSettings(); };
