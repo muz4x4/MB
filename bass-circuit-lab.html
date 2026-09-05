@@ -1,0 +1,1223 @@
+<!DOCTYPE html>
+<html lang="en-AU">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Bass Circuit Lab</title>
+<style>
+:root{
+  --mat:#1d232e;        /* ESD bench mat */
+  --mat2:#252d3a;
+  --panel:#2c3543;
+  --panel2:#343f4f;
+  --edge:#414f62;
+  --ink:#e6ebf2;
+  --ink2:#9aa8bb;
+  --ink3:#6c7a8d;
+  --wood:#7b5a3a;
+  --nickel:#c6ccd5;
+  --trace:#6fa8d0;
+  --trace2:#c98fd0;
+  --trace3:#8fd0a8;
+  --warn:#e0913a;
+  --fault:#d9564f;
+  --ok:#63b98a;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0;height:100%}
+body{
+  background:var(--mat);
+  color:var(--ink);
+  font-family:"Helvetica Neue",Helvetica,Arial,system-ui,sans-serif;
+  font-size:15px; line-height:1.45;
+  overscroll-behavior:none;
+  -webkit-user-select:none; user-select:none;
+}
+.readout{font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace;font-variant-numeric:tabular-nums}
+
+header{
+  display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;
+  padding:10px 16px calc(10px);
+  border-bottom:1px solid var(--edge);
+  background:linear-gradient(180deg,#2b3441,#232b36);
+}
+header h1{font-size:17px;font-weight:600;letter-spacing:.2px;margin:0}
+header .sub{color:var(--ink3);font-size:13px}
+header .spacer{flex:1}
+
+.layout{display:flex;gap:0;height:calc(100% - 46px);align-items:stretch}
+.stage{flex:1;min-width:0;overflow:auto;padding:14px;-webkit-overflow-scrolling:touch}
+.side{
+  width:352px;flex:0 0 352px;border-left:1px solid var(--edge);
+  background:var(--panel);overflow-y:auto;-webkit-overflow-scrolling:touch;
+  padding-bottom:60px;
+}
+@media (max-width:900px){
+  .layout{flex-direction:column;height:auto}
+  .side{width:auto;flex:none;border-left:none;border-top:1px solid var(--edge)}
+}
+
+svg#board{display:block;width:100%;height:auto;max-width:1000px;margin:0 auto;touch-action:manipulation}
+
+section.grp{border-bottom:1px solid var(--edge)}
+section.grp>h2{
+  margin:0;padding:11px 16px;font-size:14px;font-weight:600;letter-spacing:.2px;
+  display:flex;align-items:center;gap:8px;cursor:pointer;color:var(--ink);
+}
+section.grp>h2 .chev{color:var(--ink3);font-size:11px;transition:transform .15s}
+section.grp.closed>h2 .chev{transform:rotate(-90deg)}
+section.grp .body{padding:0 16px 14px}
+section.grp.closed .body{display:none}
+
+.row{display:flex;align-items:center;gap:10px;margin:9px 0}
+.row label{flex:0 0 92px;color:var(--ink2);font-size:13px}
+.row .val{margin-left:auto;color:var(--ink);font-size:13px}
+input[type=range]{flex:1;min-width:0;accent-color:var(--trace);height:30px}
+select,input[type=text],input[type=number]{
+  background:var(--panel2);color:var(--ink);border:1px solid var(--edge);
+  border-radius:5px;padding:7px 8px;font-size:14px;font-family:inherit;min-width:0
+}
+button{
+  background:var(--panel2);color:var(--ink);border:1px solid var(--edge);
+  border-radius:6px;padding:9px 12px;font-size:14px;font-family:inherit;cursor:pointer;
+}
+button:active{background:#3d4a5c}
+button.primary{background:var(--trace);border-color:var(--trace);color:#0f1620;font-weight:600}
+button.danger{border-color:#6a3a37;color:#eaa39f}
+button[aria-pressed=true]{background:var(--trace);border-color:var(--trace);color:#0f1620;font-weight:600}
+button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid var(--trace);outline-offset:2px}
+.btnrow{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
+.btnrow button{flex:1}
+
+.swatches{display:flex;gap:7px;flex-wrap:wrap;margin:8px 0}
+.sw{width:34px;height:34px;border-radius:17px;border:2px solid var(--edge);cursor:pointer}
+.sw[aria-pressed=true]{border-color:var(--ink);transform:scale(1.08)}
+
+.diag{margin:7px 0;padding:9px 11px;border-radius:6px;font-size:13px;line-height:1.4;
+  background:#31394a;border-left:3px solid var(--ink3)}
+.diag.fault{border-left-color:var(--fault);background:#3a2e30}
+.diag.warn{border-left-color:var(--warn);background:#3a352b}
+.diag.ok{border-left-color:var(--ok);background:#2b3a33}
+
+canvas#plot{width:100%;height:200px;display:block;background:#1a212b;border:1px solid var(--edge);border-radius:6px}
+.legend{display:flex;gap:14px;font-size:12px;color:var(--ink2);margin-top:7px;flex-wrap:wrap}
+.legend i{display:inline-block;width:14px;height:3px;border-radius:2px;margin-right:5px;vertical-align:middle}
+
+.hint{color:var(--ink3);font-size:12.5px;line-height:1.45;margin:6px 0 0}
+.probeout{background:#1a212b;border:1px solid var(--edge);border-radius:6px;padding:11px;margin-top:9px}
+.probeout div{display:flex;justify-content:space-between;gap:10px;padding:2px 0;font-size:13px}
+.probeout span:first-child{color:var(--ink2)}
+
+.saverow{display:flex;gap:8px;margin:9px 0}
+.saverow input{flex:1}
+.list{max-height:150px;overflow:auto;border:1px solid var(--edge);border-radius:6px}
+.list div{padding:9px 11px;border-bottom:1px solid var(--edge);display:flex;gap:8px;align-items:center;font-size:13.5px}
+.list div:last-child{border-bottom:none}
+.list div span{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.list button{padding:5px 9px;font-size:12px}
+
+#toast{
+  position:fixed;left:50%;bottom:22px;transform:translateX(-50%);
+  background:#111821;border:1px solid var(--edge);color:var(--ink);
+  padding:10px 16px;border-radius:8px;font-size:14px;opacity:0;pointer-events:none;
+  transition:opacity .2s;z-index:50;max-width:80vw;text-align:center
+}
+#toast.show{opacity:1}
+.busy{position:fixed;inset:0;background:rgba(20,26,34,.7);display:none;align-items:center;justify-content:center;z-index:60;font-size:15px}
+.busy.show{display:flex}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Bass Circuit Lab</h1>
+  <span class="sub">Marcus Miller Jazz Bass wiring bench</span>
+  <span class="spacer"></span>
+  <button id="playBtn" class="primary">Play</button>
+</header>
+
+<div class="layout">
+  <div class="stage"><svg id="board" viewBox="0 0 880 640" xmlns="http://www.w3.org/2000/svg"></svg></div>
+  <div class="side" id="side"></div>
+</div>
+
+<div id="toast"></div>
+<div class="busy" id="busy">Rendering bass line…</div>
+
+<script>
+"use strict";
+/* ============================================================
+   Bass Circuit Lab — passive/active bass wiring simulator
+   Frequency-domain MNA solver + Web Audio convolution
+   ============================================================ */
+
+/* ---------- tiny helpers ---------- */
+const $ = s => document.querySelector(s);
+const el = (t,a,h)=>{const e=document.createElement(t); if(a)for(const k in a)e.setAttribute(k,a[k]); if(h!=null)e.innerHTML=h; return e;};
+function toast(m){const t=$("#toast"); t.textContent=m; t.classList.add("show"); clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove("show"),2000);}
+function fmtR(r){ if(r>=1e6) return (r/1e6).toFixed(r>=1e7?0:2).replace(/\.00$/,"")+" MΩ"; if(r>=1e3) return (r/1e3).toFixed(r>=1e4?0:1).replace(/\.0$/,"")+" kΩ"; return r.toFixed(1)+" Ω"; }
+function fmtC(c){ if(c>=1e-6) return (c*1e6).toFixed(2).replace(/\.?0+$/,"")+" µF"; if(c>=1e-9) return (c*1e9).toFixed(1).replace(/\.0$/,"")+" nF"; return (c*1e12).toFixed(0)+" pF"; }
+
+const store=(()=>{ let ok=true; try{localStorage.setItem("__t","1");localStorage.removeItem("__t");}catch(e){ok=false;}
+  const mem={};
+  return {ok, get:k=>ok?localStorage.getItem(k):(k in mem?mem[k]:null),
+          set:(k,v)=>{ok?localStorage.setItem(k,v):(mem[k]=v);},
+          del:k=>{ok?localStorage.removeItem(k):(delete mem[k]);}};
+})();
+
+/* ============================================================
+   1. PART DEFINITIONS  (fixed positions on the cavity board)
+   ============================================================ */
+const PARTS = {
+  PUN:{kind:"pickup",label:"NECK PICKUP",box:[20,20,160,80],
+       lugs:{HOT:[180,48],GND:[180,76]}, p:{R:7200,L:2.4,Cw:100e-12,pos:0.26}},
+  PUB:{kind:"pickup",label:"BRIDGE PICKUP",box:[20,130,160,80],
+       lugs:{HOT:[180,158],GND:[180,186]}, p:{R:7600,L:2.6,Cw:100e-12,pos:0.14}},
+  VN:{kind:"pot",label:"VOL NECK",c:[300,72],r:30,
+      lugs:{L1:[266,110],L2:[300,118],L3:[334,110]}, p:{R:250000,taper:"A",rot:1}},
+  VB:{kind:"pot",label:"VOL BRIDGE",c:[300,190],r:30,
+      lugs:{L1:[266,228],L2:[300,236],L3:[334,228]}, p:{R:250000,taper:"A",rot:1}},
+  SW1:{kind:"dpdt",label:"PHASE",box:[420,20,120,112],
+       lugs:{L1:[442,46],L2:[442,76],L3:[442,106],L4:[518,46],L5:[518,76],L6:[518,106]},
+       p:{pos:"UP"}},
+  SW2:{kind:"spdt",label:"ACTIVE / PASSIVE",box:[420,152,120,96],
+       lugs:{C:[442,200],A:[518,176],B:[518,224]}, p:{pos:"A"}},
+  BATT:{kind:"batt",label:"9V BATTERY",box:[600,20,170,84],
+        lugs:{POS:[620,52],NEG:[620,84]}, p:{present:true}},
+  JACK:{kind:"jack",label:"OUTPUT JACK (TRS, switched)",box:[600,132,180,124],
+        lugs:{TIP:[620,168],RING:[620,204],SLEEVE:[620,240]}, p:{plugged:true}},
+  PRE:{kind:"preamp",label:"PREAMP  2-BAND",box:[300,286,280,152],
+       lugs:{IN:[300,320],VP:[300,362],GND:[300,404],OUT:[580,320],
+             B1:[336,438],B2:[366,438],B3:[396,438],
+             T1:[486,438],T2:[516,438],T3:[546,438]}},
+  BASS:{kind:"pot",label:"BASS",c:[352,512],r:28,
+        lugs:{L1:[322,546],L2:[352,554],L3:[382,546]}, p:{R:250000,taper:"B",rot:0.5}},
+  TREB:{kind:"pot",label:"TREBLE",c:[522,512],r:28,
+        lugs:{L1:[492,546],L2:[522,554],L3:[552,546]}, p:{R:250000,taper:"B",rot:0.5}},
+  GNDB:{kind:"gnd",label:"GROUND BUS / CAVITY SHIELD",box:[20,586,840,34],
+        lugs:{G1:[70,603],G2:[170,603],G3:[270,603],G4:[370,603],G5:[470,603],
+              G6:[570,603],G7:[670,603],G8:[790,603]}}
+};
+
+const SLOTS=[[40,282],[40,344],[40,406],[40,468],[170,282],[170,344],[170,406],[170,468]];
+
+const WIRE_COLOURS=[
+  {n:"White",v:"#f2f4f7"},{n:"Black",v:"#20262f"},{n:"Red",v:"#d8453f"},
+  {n:"Green",v:"#3fa864"},{n:"Blue",v:"#3f7fd8"},{n:"Yellow",v:"#dfc23f"},
+  {n:"Orange",v:"#df8b3f"},{n:"Bare",v:"#b9a26a"}
+];
+
+/* stock Marcus Miller-style wiring */
+function stockWires(){
+  const W=(a,b,c)=>({a,b,c});
+  return [
+    W("PUN.HOT","VN.L3","#f2f4f7"),
+    W("PUN.GND","GNDB.G1","#20262f"),
+    W("PUB.HOT","SW1.L2","#f2f4f7"),
+    W("PUB.GND","SW1.L5","#20262f"),
+    W("SW1.L1","VB.L3","#f2f4f7"),
+    W("SW1.L4","GNDB.G2","#20262f"),
+    W("SW1.L3","GNDB.G3","#20262f"),
+    W("SW1.L6","VB.L3","#dfc23f"),
+    W("VN.L1","GNDB.G4","#20262f"),
+    W("VB.L1","GNDB.G4","#20262f"),
+    W("VN.L2","PRE.IN","#d8453f"),
+    W("VB.L2","PRE.IN","#d8453f"),
+    W("PRE.OUT","SW2.A","#3fa864"),
+    W("VN.L2","SW2.B","#dfc23f"),
+    W("SW2.C","JACK.TIP","#f2f4f7"),
+    W("PRE.GND","GNDB.G6","#20262f"),
+    W("PRE.VP","BATT.POS","#d8453f"),
+    W("BATT.NEG","JACK.RING","#20262f"),
+    W("JACK.SLEEVE","GNDB.G7","#20262f"),
+    W("BASS.L1","PRE.B1","#3f7fd8"),
+    W("BASS.L2","PRE.B2","#3f7fd8"),
+    W("BASS.L3","PRE.B3","#3f7fd8"),
+    W("TREB.L1","PRE.T1","#df8b3f"),
+    W("TREB.L2","PRE.T2","#df8b3f"),
+    W("TREB.L3","PRE.T3","#df8b3f")
+  ];
+}
+
+/* ============================================================
+   2. STATE
+   ============================================================ */
+const state = {
+  wires: stockWires(),
+  extras: [],          // {id,kind:'R'|'C',value,slot}
+  mode: "wire",        // wire | probe | cut
+  colour: "#f2f4f7",
+  pending: null,
+  probe: [null,null],
+  cableC: 600e-12,
+  ampVol: 0.35,
+  src: "walk",         // walk | pluck
+  strings: 5,
+  tempo: 120,
+  pluckNote: 28,
+  selWire: null,
+  showPlot: true
+};
+let nextExtra = 1;
+
+/* ============================================================
+   3. NETLIST  (union-find over lugs)
+   ============================================================ */
+function allLugIds(){
+  const out=[];
+  for(const id in PARTS) for(const k in PARTS[id].lugs) out.push(id+"."+k);
+  for(const e of state.extras){ out.push(e.id+".A"); out.push(e.id+".B"); }
+  return out;
+}
+function buildNet(){
+  const parent={}; const lugs=allLugIds(); lugs.forEach(l=>parent[l]=l);
+  const find=x=>{ if(!(x in parent)) return null; while(parent[x]!==x){parent[x]=parent[parent[x]];x=parent[x];} return x; };
+  const uni=(a,b)=>{ a=find(a); b=find(b); if(a&&b&&a!==b) parent[a]=b; };
+
+  for(const w of state.wires) uni(w.a,w.b);
+  // ground bus is one conductor
+  const gk=Object.keys(PARTS.GNDB.lugs); for(let i=1;i<gk.length;i++) uni("GNDB."+gk[0],"GNDB."+gk[i]);
+  // switch contacts
+  if(PARTS.SW1.p.pos==="UP"){ uni("SW1.L1","SW1.L2"); uni("SW1.L4","SW1.L5"); }
+  else { uni("SW1.L2","SW1.L3"); uni("SW1.L5","SW1.L6"); }
+  uni("SW2.C", PARTS.SW2.p.pos==="A" ? "SW2.A" : "SW2.B");
+  // plug inserted: sleeve barrel shorts ring to sleeve (the battery switch)
+  if(PARTS.JACK.p.plugged) uni("JACK.RING","JACK.SLEEVE");
+
+  const roots=[...new Set(lugs.map(find))];
+  const ref=find("JACK.SLEEVE");
+  const idx={}; let n=0;
+  for(const r of roots){ idx[r] = (r===ref)? -1 : n++; }
+  return {
+    n, ref,
+    i: lug => { const r=find(lug); return r==null?-1:idx[r]; },
+    root: find,
+    same:(a,b)=>{ const x=find(a),y=find(b); return x!=null&&x===y; },
+    degree: lug => state.wires.filter(w=>w.a===lug||w.b===lug).length
+  };
+}
+
+/* ---------- pot taper ---------- */
+function taperF(p){ const r=Math.min(1,Math.max(0,p.rot)); return p.taper==="A" ? Math.pow(r,2.9) : r; }
+
+/* ============================================================
+   4. COMPLEX MNA SOLVER
+   ============================================================ */
+function solveAt(net, f, ccable){
+  const w = 2*Math.PI*Math.max(f,1);
+  const N = net.n, NR = 3;                       // 3 right-hand sides
+  if(N===0) return null;
+  const Ar=new Float64Array(N*(N+NR)), Ai=new Float64Array(N*(N+NR));
+  const W=N+NR;
+  const addY=(a,b,yr,yi)=>{
+    if(a>=0){Ar[a*W+a]+=yr;Ai[a*W+a]+=yi;}
+    if(b>=0){Ar[b*W+b]+=yr;Ai[b*W+b]+=yi;}
+    if(a>=0&&b>=0){Ar[a*W+b]-=yr;Ai[a*W+b]-=yi;Ar[b*W+a]-=yr;Ai[b*W+a]-=yi;}
+  };
+  const addI=(node,col,ir,ii)=>{ if(node>=0){Ar[node*W+N+col]+=ir;Ai[node*W+N+col]+=ii;} };
+
+  for(let i=0;i<N;i++) Ar[i*W+i]+=1e-12;         // gmin — keeps floating nets solvable
+
+  // pickups: Thevenin R+jwL, winding cap across terminals
+  const pus=[["PUN",0],["PUB",1]];
+  for(const [id,col] of pus){
+    const p=PARTS[id].p, hot=net.i(id+".HOT"), gnd=net.i(id+".GND");
+    const zr=p.R, zi=w*p.L, d=zr*zr+zi*zi;
+    const yr=zr/d, yi=-zi/d;
+    addY(hot,gnd, yr, yi + w*p.Cw);
+    addI(hot,col, yr, yi); addI(gnd,col,-yr,-yi);
+  }
+  // pots
+  for(const id of ["VN","VB","BASS","TREB"]){
+    const p=PARTS[id].p, fr=taperF(p);
+    const r12=Math.max(p.R*fr,0.5), r23=Math.max(p.R*(1-fr),0.5);
+    addY(net.i(id+".L1"),net.i(id+".L2"),1/r12,0);
+    addY(net.i(id+".L2"),net.i(id+".L3"),1/r23,0);
+  }
+  // preamp block: 1M input, 100R output, output driven on RHS 2
+  const pin=net.i("PRE.IN"), pout=net.i("PRE.OUT"), pg=net.i("PRE.GND");
+  addY(pin,pg, 1e-6, w*20e-12);
+  addY(pout,pg, 1/100, 0);
+  addI(pout,2, 1/100, 0); addI(pg,2,-1/100,0);
+  // amp load + cable capacitance (only when plugged in)
+  if(PARTS.JACK.p.plugged) addY(net.i("JACK.TIP"), net.i("JACK.SLEEVE"), 1e-6, w*ccable);
+  // added parts
+  for(const e of state.extras){
+    const a=net.i(e.id+".A"), b=net.i(e.id+".B");
+    if(e.kind==="R") addY(a,b,1/Math.max(e.value,0.1),0); else addY(a,b,0,w*e.value);
+  }
+
+  // complex Gaussian elimination, partial pivot
+  for(let k=0;k<N;k++){
+    let piv=k, best=-1;
+    for(let i=k;i<N;i++){ const m=Math.abs(Ar[i*W+k])+Math.abs(Ai[i*W+k]); if(m>best){best=m;piv=i;} }
+    if(best<1e-300) continue;
+    if(piv!==k) for(let j=k;j<W;j++){
+      let t=Ar[k*W+j];Ar[k*W+j]=Ar[piv*W+j];Ar[piv*W+j]=t;
+      t=Ai[k*W+j];Ai[k*W+j]=Ai[piv*W+j];Ai[piv*W+j]=t;
+    }
+    const pr=Ar[k*W+k], pi=Ai[k*W+k], pd=pr*pr+pi*pi;
+    for(let i=k+1;i<N;i++){
+      const ar=Ar[i*W+k], ai=Ai[i*W+k];
+      if(ar===0&&ai===0) continue;
+      const mr=(ar*pr+ai*pi)/pd, mi=(ai*pr-ar*pi)/pd;
+      for(let j=k;j<W;j++){
+        const br=Ar[k*W+j], bi=Ai[k*W+j];
+        Ar[i*W+j]-= mr*br-mi*bi;
+        Ai[i*W+j]-= mr*bi+mi*br;
+      }
+    }
+  }
+  const vr=new Float64Array(N*NR), vi=new Float64Array(N*NR);
+  for(let c=0;c<NR;c++){
+    for(let i=N-1;i>=0;i--){
+      let sr=Ar[i*W+N+c], si=Ai[i*W+N+c];
+      for(let j=i+1;j<N;j++){
+        const xr=vr[j*NR+c], xi=vi[j*NR+c], ar=Ar[i*W+j], ai=Ai[i*W+j];
+        sr-=ar*xr-ai*xi; si-=ar*xi+ai*xr;
+      }
+      const pr=Ar[i*W+i], pi=Ai[i*W+i], pd=pr*pr+pi*pi;
+      if(pd<1e-300){ vr[i*NR+c]=0; vi[i*NR+c]=0; }
+      else { vr[i*NR+c]=(sr*pr+si*pi)/pd; vi[i*NR+c]=(si*pr-sr*pi)/pd; }
+    }
+  }
+  return {vr,vi,NR,N};
+}
+const nodeV=(s,i,c)=> (i<0||!s) ? {re:0,im:0} : {re:s.vr[i*s.NR+c], im:s.vi[i*s.NR+c]};
+
+/* ---------- DC resistance probe ---------- */
+function dcResistance(net,a,b){
+  const ia=net.i(a), ib=net.i(b);
+  if(ia===ib) return 0;
+  const N=net.n, W=N+1;
+  const Ar=new Float64Array(N*W);
+  const addG=(x,y,g)=>{ if(x>=0)Ar[x*W+x]+=g; if(y>=0)Ar[y*W+y]+=g; if(x>=0&&y>=0){Ar[x*W+y]-=g;Ar[y*W+x]-=g;} };
+  for(let i=0;i<N;i++) Ar[i*W+i]+=1e-12;
+  for(const id of ["PUN","PUB"]) addG(net.i(id+".HOT"),net.i(id+".GND"),1/PARTS[id].p.R); // coil DC resistance
+  for(const id of ["VN","VB","BASS","TREB"]){
+    const p=PARTS[id].p, fr=taperF(p);
+    addG(net.i(id+".L1"),net.i(id+".L2"),1/Math.max(p.R*fr,0.5));
+    addG(net.i(id+".L2"),net.i(id+".L3"),1/Math.max(p.R*(1-fr),0.5));
+  }
+  addG(net.i("PRE.IN"),net.i("PRE.GND"),1e-6);
+  addG(net.i("PRE.OUT"),net.i("PRE.GND"),1/100);
+  if(PARTS.JACK.p.plugged) addG(net.i("JACK.TIP"),net.i("JACK.SLEEVE"),1e-6);
+  for(const e of state.extras) if(e.kind==="R") addG(net.i(e.id+".A"),net.i(e.id+".B"),1/Math.max(e.value,0.1));
+  if(ia>=0) Ar[ia*W+N]+=1; if(ib>=0) Ar[ib*W+N]-=1;    // inject 1 A
+  for(let k=0;k<N;k++){
+    let piv=k,best=-1;
+    for(let i=k;i<N;i++){const m=Math.abs(Ar[i*W+k]); if(m>best){best=m;piv=i;}}
+    if(best<1e-300) continue;
+    if(piv!==k) for(let j=k;j<W;j++){const t=Ar[k*W+j];Ar[k*W+j]=Ar[piv*W+j];Ar[piv*W+j]=t;}
+    for(let i=k+1;i<N;i++){
+      const m=Ar[i*W+k]/Ar[k*W+k]; if(!m) continue;
+      for(let j=k;j<W;j++) Ar[i*W+j]-=m*Ar[k*W+j];
+    }
+  }
+  const v=new Float64Array(N);
+  for(let i=N-1;i>=0;i--){
+    let s=Ar[i*W+N];
+    for(let j=i+1;j<N;j++) s-=Ar[i*W+j]*v[j];
+    v[i]= Math.abs(Ar[i*W+i])<1e-300 ? 0 : s/Ar[i*W+i];
+  }
+  const va=ia<0?0:v[ia], vb=ib<0?0:v[ib];
+  return Math.abs(va-vb);
+}
+
+/* ============================================================
+   5. PREAMP TRANSFER FUNCTION (behavioural black box)
+   ============================================================ */
+function eqWiring(pot,l1,l2,l3,net){
+  if(!net.same(pot+".L2",l2)) return 0;
+  if(net.same(pot+".L1",l1)&&net.same(pot+".L3",l3)) return 1;
+  if(net.same(pot+".L1",l3)&&net.same(pot+".L3",l1)) return -1;
+  return 0;
+}
+function preampState(net){
+  const powered = PARTS.BATT.p.present && net.same("BATT.POS","PRE.VP") && net.same("BATT.NEG","PRE.GND");
+  const bw = eqWiring("BASS","PRE.B1","PRE.B2","PRE.B3",net);
+  const tw = eqWiring("TREB","PRE.T1","PRE.T2","PRE.T3",net);
+  const br = bw===0 ? 0.5 : (bw===1 ? PARTS.BASS.p.rot : 1-PARTS.BASS.p.rot);
+  const tr = tw===0 ? 0.5 : (tw===1 ? PARTS.TREB.p.rot : 1-PARTS.TREB.p.rot);
+  return {powered, bassWired:bw, trebWired:tw, bassDb:(br-0.5)*30, trebDb:(tr-0.5)*30};
+}
+function preampH(f, ps){
+  if(!ps.powered) return {re:0,im:0};
+  const w=2*Math.PI*Math.max(f,1);
+  const gb=Math.pow(10,ps.bassDb/20), gt=Math.pow(10,ps.trebDb/20);
+  const a=w/(2*Math.PI*120), b=w/(2*Math.PI*3500);
+  // low shelf (gb at DC, 1 at HF): (gb + ja)/(1 + ja)
+  let d=1+a*a;
+  const lr=(gb+a*a)/d, li=(a-gb*a)/d;
+  // high shelf (1 at DC, gt at HF): (1 + j gt b)/(1 + jb)
+  d=1+b*b;
+  const hr=(1+gt*b*b)/d, hi=(gt*b-b)/d;
+  return {re:lr*hr-li*hi, im:lr*hi+li*hr};
+}
+
+/* ============================================================
+   6. FFT + impulse response
+   ============================================================ */
+function fft(re,im,inv){
+  const n=re.length;
+  for(let i=1,j=0;i<n;i++){
+    let bit=n>>1; for(;j&bit;bit>>=1) j^=bit; j^=bit;
+    if(i<j){ let t=re[i];re[i]=re[j];re[j]=t; t=im[i];im[i]=im[j];im[j]=t; }
+  }
+  for(let len=2;len<=n;len<<=1){
+    const ang=2*Math.PI/len*(inv?1:-1), wr=Math.cos(ang), wi=Math.sin(ang), h=len>>1;
+    for(let i=0;i<n;i+=len){
+      let cr=1,ci=0;
+      for(let k=0;k<h;k++){
+        const ur=re[i+k],ui=im[i+k];
+        const xr=re[i+k+h],xi=im[i+k+h];
+        const vr2=xr*cr-xi*ci, vi2=xr*ci+xi*cr;
+        re[i+k]=ur+vr2; im[i+k]=ui+vi2;
+        re[i+k+h]=ur-vr2; im[i+k+h]=ui-vi2;
+        const ncr=cr*wr-ci*wi; ci=cr*wi+ci*wr; cr=ncr;
+      }
+    }
+  }
+  if(inv) for(let i=0;i<n;i++){ re[i]/=n; im[i]/=n; }
+}
+function irFromH(H,N){
+  const re=new Float64Array(N), im=new Float64Array(N), half=N>>1;
+  for(let k=0;k<=half;k++){ re[k]=H[k].re; im[k]=H[k].im; }
+  im[0]=0; im[half]=0;
+  for(let k=half+1;k<N;k++){ re[k]=H[N-k].re; im[k]=-H[N-k].im; }
+  fft(re,im,true);
+  const out=new Float32Array(N);
+  let bad=false;
+  for(let i=0;i<N;i++){ const v=re[i]; if(!isFinite(v)){bad=true;break;} out[i]=v; }
+  if(bad) return new Float32Array(N);
+  const t=Math.floor(N*0.25);
+  for(let i=0;i<t;i++) out[N-t+i]*=0.5*(1+Math.cos(Math.PI*i/t));
+  return out;
+}
+
+/* ============================================================
+   7. CIRCUIT ANALYSIS — cached solves + combine
+   ============================================================ */
+const FFTN = 2048;
+let cache = null;   // {H:{tipN,tipB,inN,inB,out}, net, fs}
+
+function analyseNetwork(fs){
+  const net = buildNet();
+  const half = FFTN>>1;
+  const H = { tipN:[], tipB:[], inN:[], inB:[], out:[] };
+  const tip=net.i("JACK.TIP"), pin=net.i("PRE.IN");
+  for(let k=0;k<=half;k++){
+    const f = k*fs/FFTN;
+    const s = solveAt(net,f,state.cableC);
+    H.tipN.push(nodeV(s,tip,0)); H.tipB.push(nodeV(s,tip,1)); H.out.push(nodeV(s,tip,2));
+    H.inN.push(nodeV(s,pin,0));  H.inB.push(nodeV(s,pin,1));
+  }
+  cache = {H, net, fs};
+  return cache;
+}
+function combine(fs){
+  if(!cache || cache.fs!==fs) analyseNetwork(fs);
+  const {H,net}=cache, half=FFTN>>1;
+  const ps = preampState(net);
+  const Hn=new Array(half+1), Hb=new Array(half+1);
+  for(let k=0;k<=half;k++){
+    const f=k*fs/FFTN, p=preampH(f,ps), o=H.out[k];
+    const pr=p.re*o.re-p.im*o.im, pi=p.re*o.im+p.im*o.re; // preamp × out-path
+    const an=H.inN[k], ab=H.inB[k];
+    Hn[k]={re:H.tipN[k].re + an.re*pr-an.im*pi, im:H.tipN[k].im + an.re*pi+an.im*pr};
+    Hb[k]={re:H.tipB[k].re + ab.re*pr-ab.im*pi, im:H.tipB[k].im + ab.re*pi+ab.im*pr};
+  }
+  return {Hn,Hb,ps,net};
+}
+
+/* ============================================================
+   8. DIAGNOSTICS
+   ============================================================ */
+function diagnose(res,fs){
+  const {net,ps,Hn,Hb}=res, out=[];
+  const bin = k=>Math.round(200*FFTN/fs);
+  const k200=bin();
+  const mag = h=>Math.hypot(h[k200].re,h[k200].im);
+  const mn=mag(Hn), mb=mag(Hb);
+  let hum=0;
+
+  if(!PARTS.JACK.p.plugged) out.push(["warn","Cable unplugged. Nothing reaches the amp and the preamp is switched off at the ring contact."]);
+  if(!net.same("JACK.SLEEVE","GNDB.G1")) { out.push(["fault","Jack sleeve is not connected to the ground bus. The circuit has no ground reference."]); hum=Math.max(hum,0.9); }
+  if(net.same("JACK.TIP","JACK.SLEEVE")) out.push(["fault","Jack tip is shorted to sleeve. Output is dead."]);
+  if(!net.same("PUN.GND","GNDB.G1")) { out.push(["warn","Neck pickup cold lead is not grounded. Expect hum."]); hum=Math.max(hum,0.55); }
+  if(!net.same("PUB.GND","GNDB.G1") && !net.same("PUB.HOT","GNDB.G1")) { out.push(["warn","Bridge pickup has no return to ground. Expect hum."]); hum=Math.max(hum,0.55); }
+  if(net.degree("VN.L2")===0) out.push(["warn","Neck volume wiper is not wired to anything."]);
+  if(net.degree("VB.L2")===0) out.push(["warn","Bridge volume wiper is not wired to anything."]);
+
+  if(!PARTS.BATT.p.present) out.push(["warn","No battery fitted. The preamp cannot run."]);
+  else if(!net.same("BATT.POS","PRE.VP")) out.push(["fault","Battery positive does not reach the preamp V+ terminal."]);
+  else if(!ps.powered && PARTS.JACK.p.plugged) out.push(["fault","Battery negative has no path to the preamp ground. Run it to the jack ring."]);
+  if(!PARTS.JACK.p.plugged && PARTS.BATT.p.present && net.same("BATT.POS","PRE.VP") && net.same("BATT.NEG","PRE.GND"))
+    out.push(["fault","Battery stays connected with the cable out. It will go flat in a few days — the negative lead must go to the jack ring, not straight to ground."]);
+
+  if(ps.bassWired===0) out.push(["warn","Bass pot is not correctly wired to the preamp. The bass control does nothing."]);
+  else if(ps.bassWired===-1) out.push(["warn","Bass pot outer lugs are reversed. The control works backwards."]);
+  if(ps.trebWired===0) out.push(["warn","Treble pot is not correctly wired to the preamp. The treble control does nothing."]);
+  else if(ps.trebWired===-1) out.push(["warn","Treble pot outer lugs are reversed. The control works backwards."]);
+
+  if(PARTS.SW2.p.pos==="A" && !ps.powered && PARTS.JACK.p.plugged)
+    out.push(["fault","Signal is routed through an unpowered preamp. No sound."]);
+
+  if(mn<1e-4 && mb<1e-4 && PARTS.JACK.p.plugged)
+    out.push(["fault","No signal path from either pickup to the jack tip."]);
+
+  if(PARTS.SW1.p.pos==="DOWN" && PARTS.VN.p.rot>0.1 && PARTS.VB.p.rot>0.1)
+    out.push(["ok","Pickups are out of phase. Fundamentals partly cancel — thin and nasal, and quieter."]);
+
+  if(!out.length) out.push(["ok","Circuit is complete and working."]);
+  return {list:out, hum};
+}
+
+/* ============================================================
+   9. STRING SYNTHESIS — Karplus-Strong + pickup position comb
+   ============================================================ */
+const LINE=[
+  29,33,36,40,  34,38,41,44,  41,40,38,36,  33,36,39,40,
+  29,34,38,41,  44,41,38,35,  36,33,29,33,  38,42,45,48,
+  43,46,50,53,  48,46,43,40,  29,36,41,45,  31,34,36,40
+];
+const LOW5={16:27, 23:23, 28:26, 44:24};   // extra low notes when a 5-string is selected
+const midiHz = m => 440*Math.pow(2,(m-69)/12);
+
+function ksNote(f0,dur,fs){
+  const L=fs/f0, bl=Math.max(4,Math.round(L)), n=Math.ceil(dur*fs);
+  const buf=new Float32Array(bl);
+  let prev=0;
+  for(let i=0;i<bl;i++){ const r=Math.random()*2-1; prev=prev*0.55+r*0.45; buf[i]=prev; }
+  let m=0; for(let i=0;i<bl;i++) m=Math.max(m,Math.abs(buf[i]));
+  if(m>0) for(let i=0;i<bl;i++) buf[i]/=m;
+  const out=new Float32Array(n);
+  const loop=0.9988 - Math.min(0.0009, f0/90000);
+  let idx=0;
+  for(let i=0;i<n;i++){
+    const cur=buf[idx], nxt=buf[(idx+1)%bl];
+    out[i]=cur;
+    buf[idx]=(0.58*cur+0.42*nxt)*loop;
+    idx=(idx+1)%bl;
+  }
+  // pluck body: soften the very first cycles
+  const at=Math.min(n,Math.round(fs*0.004));
+  for(let i=0;i<at;i++) out[i]*=i/at;
+  return {out,L};
+}
+function comb(sig,delay,mix){
+  const n=sig.length, out=new Float32Array(n);
+  const di=Math.floor(delay), fr=delay-di;
+  for(let i=0;i<n;i++){
+    let d=0;
+    const a=i-di, b=a-1;
+    if(a>=0) d=(1-fr)*sig[a]+(b>=0?fr*sig[b]:0);
+    out[i]=0.5*(sig[i]-mix*d);
+  }
+  return out;
+}
+function renderPerformance(fs,opts){
+  const beat=60/opts.tempo;
+  let notes=[];
+  if(opts.src==="walk"){
+    for(let i=0;i<LINE.length;i++){
+      let m=LINE[i];
+      if(opts.strings===5 && (i in LOW5)) m=LOW5[i];
+      if(opts.strings===4 && m<28) m+=12;
+      notes.push({m, t:i*beat, amp: (i%4===0?1.0:0.86)});
+    }
+  } else {
+    for(let i=0;i<6;i++) notes.push({m:opts.note, t:i*2.0, amp:1});
+  }
+  const total=(notes[notes.length-1].t)+ (opts.src==="walk"?beat*2.4:2.6);
+  const n=Math.ceil(total*fs);
+  const neck=new Float32Array(n), brid=new Float32Array(n);
+  const pN=PARTS.PUN.p.pos, pB=PARTS.PUB.p.pos;
+  for(const nt of notes){
+    const f0=midiHz(nt.m);
+    const dur=Math.min(opts.src==="walk"?beat*1.9:2.6, total-nt.t);
+    if(dur<=0.02) continue;
+    const {out,L}=ksNote(f0,dur,fs);
+    const rel=Math.round(fs*0.07);
+    for(let i=Math.max(0,out.length-rel);i<out.length;i++)
+      out[i]*=(out.length-i)/rel;
+    const a=comb(out,pN*L,0.9), b=comb(out,pB*L,0.9);
+    const off=Math.round(nt.t*fs);
+    for(let i=0;i<out.length && off+i<n;i++){ neck[off+i]+=a[i]*nt.amp; brid[off+i]+=b[i]*nt.amp*1.1; }
+  }
+  let pk=0; for(let i=0;i<n;i++){ pk=Math.max(pk,Math.abs(neck[i]),Math.abs(brid[i])); }
+  if(pk>0){ const g=0.9/pk; for(let i=0;i<n;i++){ neck[i]*=g; brid[i]*=g; } }
+  return {neck,brid,n};
+}
+function makeHum(fs){
+  const n=Math.ceil(fs*1.0), b=new Float32Array(n);
+  for(let i=0;i<n;i++){
+    const t=i/fs;
+    b[i]=0.6*Math.sin(2*Math.PI*50*t)+0.3*Math.sin(2*Math.PI*150*t)
+        +0.14*Math.sin(2*Math.PI*250*t)+0.06*Math.sin(2*Math.PI*350*t)
+        +0.03*(Math.random()*2-1);
+  }
+  return b;
+}
+
+/* ============================================================
+   10. AUDIO ENGINE
+   ============================================================ */
+let ctx=null, nodes=null, bufNeck=null, bufBrid=null, bufHum=null, playing=false, rendered=null;
+
+function initAudio(){
+  if(ctx) return;
+  ctx = new (window.AudioContext||window.webkitAudioContext)();
+  const sum=ctx.createGain(); sum.gain.value=1;
+  const amp=ctx.createGain(); amp.gain.value=state.ampVol;
+  const cN=ctx.createConvolver(); cN.normalize=false;
+  const cB=ctx.createConvolver(); cB.normalize=false;
+  const gN=ctx.createGain(), gB=ctx.createGain(), gH=ctx.createGain();
+  gH.gain.value=0;
+  cN.connect(gN); gN.connect(sum);
+  cB.connect(gB); gB.connect(sum);
+  gH.connect(sum);
+  sum.connect(amp); amp.connect(ctx.destination);
+  nodes={sum,amp,cN,cB,gN,gB,gH,srcN:null,srcB:null,srcH:null};
+}
+function ensureBuffers(){
+  const fs=ctx.sampleRate;
+  const key=[state.src,state.strings,state.tempo,state.pluckNote,fs].join("|");
+  if(rendered===key) return;
+  const r=renderPerformance(fs,{src:state.src,strings:state.strings,tempo:state.tempo,note:state.pluckNote});
+  bufNeck=ctx.createBuffer(1,r.n,fs); bufNeck.getChannelData(0).set(r.neck);
+  bufBrid=ctx.createBuffer(1,r.n,fs); bufBrid.getChannelData(0).set(r.brid);
+  const h=makeHum(fs); bufHum=ctx.createBuffer(1,h.length,fs); bufHum.getChannelData(0).set(h);
+  rendered=key;
+}
+function applyIRs(res){
+  const fs=ctx.sampleRate;
+  const irN=irFromH(res.Hn,FFTN), irB=irFromH(res.Hb,FFTN);
+  const bn=ctx.createBuffer(1,FFTN,fs); bn.getChannelData(0).set(irN);
+  const bb=ctx.createBuffer(1,FFTN,fs); bb.getChannelData(0).set(irB);
+  const t=ctx.currentTime;
+  nodes.sum.gain.cancelScheduledValues(t);
+  nodes.sum.gain.setValueAtTime(nodes.sum.gain.value,t);
+  nodes.sum.gain.linearRampToValueAtTime(0.0001,t+0.012);
+  nodes.cN.buffer=bn; nodes.cB.buffer=bb;
+  nodes.sum.gain.linearRampToValueAtTime(1,t+0.05);
+}
+function startPlay(){
+  initAudio();
+  if(ctx.state==="suspended") ctx.resume();
+  $("#busy").classList.add("show");
+  setTimeout(()=>{
+    try{
+      ensureBuffers();
+      stopSources();
+      const sN=ctx.createBufferSource(); sN.buffer=bufNeck; sN.loop=true; sN.connect(nodes.cN);
+      const sB=ctx.createBufferSource(); sB.buffer=bufBrid; sB.loop=true; sB.connect(nodes.cB);
+      const sH=ctx.createBufferSource(); sH.buffer=bufHum; sH.loop=true; sH.connect(nodes.gH);
+      const t=ctx.currentTime+0.06;
+      sN.start(t); sB.start(t); sH.start(t);
+      nodes.srcN=sN; nodes.srcB=sB; nodes.srcH=sH;
+      playing=true; $("#playBtn").textContent="Stop";
+      recompute(true);
+    }finally{ $("#busy").classList.remove("show"); }
+  },30);
+}
+function stopSources(){
+  for(const k of ["srcN","srcB","srcH"]) if(nodes&&nodes[k]){ try{nodes[k].stop();}catch(e){} nodes[k].disconnect(); nodes[k]=null; }
+}
+function stopPlay(){ stopSources(); playing=false; $("#playBtn").textContent="Play"; }
+
+/* ============================================================
+   11. RECOMPUTE PIPELINE
+   ============================================================ */
+let dirtyNet=true, pending=null, lastRes=null;
+function markNet(){ dirtyNet=true; schedule(); }
+function markCtl(){ schedule(); }
+function schedule(){
+  if(pending) return;
+  pending=setTimeout(()=>{ pending=null; recompute(false); },110);
+}
+function recompute(force){
+  const fs = ctx ? ctx.sampleRate : 48000;
+  if(dirtyNet||force||!cache||cache.fs!==fs){ analyseNetwork(fs); dirtyNet=false; }
+  const res=combine(fs);
+  lastRes=res;
+  const d=diagnose(res,fs);
+  if(ctx&&nodes){
+    applyIRs(res);
+    nodes.amp.gain.setTargetAtTime(state.ampVol,ctx.currentTime,0.02);
+    nodes.gH.gain.setTargetAtTime(d.hum*0.06*(PARTS.JACK.p.plugged?1:0),ctx.currentTime,0.05);
+  }
+  drawPlot(res,fs);
+  renderDiagnostics(d.list);
+  drawBoard();
+  updateProbe();
+}
+
+/* ============================================================
+   12. FREQUENCY PLOT
+   ============================================================ */
+function drawPlot(res,fs){
+  const c=$("#plot"); if(!c) return;
+  const dpr=Math.min(2,window.devicePixelRatio||1);
+  const w=c.clientWidth, h=200;
+  c.width=w*dpr; c.height=h*dpr;
+  const g=c.getContext("2d"); g.setTransform(dpr,0,0,dpr,0,0);
+  g.clearRect(0,0,w,h);
+  const F0=25,F1=12000, DB0=-45, DB1=20;
+  const X=f=>(Math.log10(f/F0)/Math.log10(F1/F0))*(w-46)+38;
+  const Y=db=>h-16-((db-DB0)/(DB1-DB0))*(h-30);
+  g.strokeStyle="#2c3542"; g.lineWidth=1; g.font="10px ui-monospace,monospace"; g.fillStyle="#6c7a8d";
+  for(const f of [30,50,100,200,500,1000,2000,5000,10000]){
+    g.beginPath(); g.moveTo(X(f),8); g.lineTo(X(f),h-16); g.stroke();
+    g.fillText(f>=1000?(f/1000)+"k":String(f), X(f)-8, h-4);
+  }
+  for(let db=DB1;db>=DB0;db-=15){
+    g.beginPath(); g.moveTo(38,Y(db)); g.lineTo(w-8,Y(db)); g.stroke();
+    g.fillText(db+"dB",2,Y(db)+3);
+  }
+  const half=FFTN>>1;
+  const curve=(arr,col,wd)=>{
+    g.strokeStyle=col; g.lineWidth=wd; g.beginPath(); let started=false;
+    for(let k=1;k<=half;k++){
+      const f=k*fs/FFTN; if(f<F0||f>F1) continue;
+      const m=Math.hypot(arr[k].re,arr[k].im);
+      const db=Math.max(DB0,20*Math.log10(Math.max(m,1e-7)));
+      const x=X(f),y=Y(Math.min(db,DB1));
+      started?g.lineTo(x,y):(g.moveTo(x,y),started=true);
+    }
+    g.stroke();
+  };
+  const sum=new Array(half+1);
+  for(let k=0;k<=half;k++) sum[k]={re:res.Hn[k].re+res.Hb[k].re, im:res.Hn[k].im+res.Hb[k].im};
+  curve(res.Hn,"#6fa8d0",1.4);
+  curve(res.Hb,"#c98fd0",1.4);
+  curve(sum,"#8fd0a8",2.2);
+}
+
+/* ============================================================
+   13. BOARD RENDERING
+   ============================================================ */
+function lugXY(id){
+  const [p,k]=id.split(".");
+  if(PARTS[p]) return PARTS[p].lugs[k];
+  const e=state.extras.find(x=>x.id===p);
+  if(!e) return null;
+  const s=SLOTS[e.slot];
+  return k==="A"?[s[0],s[1]]:[s[0]+90,s[1]];
+}
+function esc(s){return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;");}
+
+function drawBoard(){
+  const net=cache?cache.net:buildNet();
+  let s="";
+  s+=`<defs>
+    <linearGradient id="wood" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#4a3a2c"/><stop offset="1" stop-color="#33281e"/></linearGradient>
+    <linearGradient id="body" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2e3846"/><stop offset="1" stop-color="#28313d"/></linearGradient>
+  </defs>`;
+  s+=`<rect x="4" y="4" width="872" height="632" rx="24" fill="url(#wood)" stroke="#5b4632" stroke-width="2"/>`;
+  s+=`<rect x="14" y="14" width="852" height="612" rx="18" fill="url(#body)" stroke="#1b222c"/>`;
+
+  // wires first (under parts)
+  for(const w of state.wires){
+    const a=lugXY(w.a), b=lugXY(w.b); if(!a||!b) continue;
+    const mx=(a[0]+b[0])/2, my=(a[1]+b[1])/2 + Math.min(34,Math.abs(a[0]-b[0])*0.16+14);
+    const d=`M${a[0]},${a[1]} Q${mx},${my} ${b[0]},${b[1]}`;
+    const selected = state.selWire===w;
+    s+=`<path d="${d}" fill="none" stroke="#101720" stroke-width="6.5" stroke-linecap="round" opacity=".75"/>`;
+    s+=`<path class="wire" data-w="${state.wires.indexOf(w)}" d="${d}" fill="none" stroke="${w.c}" stroke-width="${selected?5.5:3.4}" stroke-linecap="round"${selected?' stroke-dasharray="7 4"':''}/>`;
+    s+=`<path class="wirehit" data-w="${state.wires.indexOf(w)}" d="${d}" fill="none" stroke="transparent" stroke-width="20" stroke-linecap="round"/>`;
+  }
+
+  const label=(x,y,t,sz)=>`<text x="${x}" y="${y}" fill="#93a2b6" font-size="${sz||11}" font-family="Helvetica Neue,Arial,sans-serif" letter-spacing=".6">${esc(t)}</text>`;
+
+  for(const id in PARTS){
+    const P=PARTS[id];
+    if(P.kind==="pot"){
+      const [cx,cy]=P.c, r=P.r, fr=taperF(P.p);
+      const ang=(-225+270*P.p.rot)*Math.PI/180;
+      s+=`<circle cx="${cx}" cy="${cy}" r="${r+3}" fill="#171d26"/>`;
+      s+=`<circle cx="${cx}" cy="${cy}" r="${r}" fill="#b9c0ca" stroke="#8c949f" stroke-width="1.5"/>`;
+      s+=`<circle cx="${cx}" cy="${cy}" r="${r-8}" fill="#a7afba"/>`;
+      s+=`<line x1="${cx}" y1="${cy}" x2="${cx+Math.cos(ang)*(r-4)}" y2="${cy+Math.sin(ang)*(r-4)}" stroke="#232a34" stroke-width="3.5" stroke-linecap="round"/>`;
+      s+=label(cx-r-4,cy-r-8,P.label);
+      s+=label(cx-r-4,cy+r+30,`${fmtR(P.p.R)} · ${P.p.taper}`,10);
+    } else if(P.kind==="pickup"){
+      const [x,y,w,h]=P.box;
+      s+=`<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="8" fill="#1c232d" stroke="#4d5b6e"/>`;
+      for(let i=0;i<8;i++) s+=`<circle cx="${x+22+i*15}" cy="${y+28}" r="4.5" fill="#7d8898"/>`;
+      s+=label(x+12,y+58,P.label);
+      s+=label(x+12,y+72,`pos ${(P.p.pos*100).toFixed(0)}% from bridge`,9.5);
+    } else if(P.kind==="preamp"){
+      const [x,y,w,h]=P.box;
+      s+=`<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="7" fill="#16313b" stroke="#3d7f8e" stroke-width="1.5"/>`;
+      s+=label(x+14,y+26,"PREAMP — 2 BAND ACTIVE",12);
+      s+=label(x+14,y+44,"sealed module",10);
+      const ps=cache?preampState(cache.net):{powered:false};
+      s+=`<circle cx="${x+w-24}" cy="${y+22}" r="6" fill="${ps.powered?"#63b98a":"#3a4550"}"/>`;
+      s+=label(x+w-64,y+44,ps.powered?"powered":"no power",9.5);
+      s+=label(x+34,y+h-10,"bass pot",10);
+      s+=label(x+184,y+h-10,"treble pot",10);
+      s+=label(x+8,y+70,"in",10);
+      s+=label(x+8,y+112,"9V",10);
+      s+=label(x+8,y+154,"gnd",10);
+      s+=label(x+w-30,y+70,"out",10);
+    } else if(P.kind==="jack"){
+      const [x,y,w,h]=P.box;
+      s+=`<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="7" fill="#1c232d" stroke="#4d5b6e"/>`;
+      s+=`<rect x="${x+96}" y="${y+38}" width="66" height="46" rx="6" fill="#8f98a5"/>`;
+      s+=`<circle cx="${x+129}" cy="${y+61}" r="15" fill="#20262f"/>`;
+      if(PARTS.JACK.p.plugged){
+        s+=`<rect x="${x+120}" y="${y+52}" width="60" height="18" rx="7" fill="#c6ccd5"/>`;
+        s+=`<circle cx="${x+129}" cy="${y+61}" r="8" fill="#c6ccd5"/>`;
+      }
+      s+=label(x+12,y+22,P.label,11);
+      s+=label(x+96,y+104,PARTS.JACK.p.plugged?"cable in":"cable out",10);
+    } else if(P.kind==="batt"){
+      const [x,y,w,h]=P.box;
+      s+=`<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="7" fill="#1c232d" stroke="#4d5b6e"/>`;
+      s+=`<rect x="${x+86}" y="${y+18}" width="66" height="48" rx="5" fill="${PARTS.BATT.p.present?"#3a4a3f":"#2a313b"}" stroke="#586a5e"/>`;
+      s+=label(x+12,y+22,P.label,11);
+      s+=label(x+96,y+48,PARTS.BATT.p.present?"9 V":"empty",12);
+    } else if(P.kind==="dpdt"||P.kind==="spdt"){
+      const [x,y,w,h]=P.box;
+      s+=`<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="7" fill="#1c232d" stroke="#4d5b6e"/>`;
+      s+=label(x+10,y+16,P.label,11);
+      if(P.kind==="dpdt"){
+        const up=P.p.pos==="UP";
+        s+=`<line x1="${x+30}" y1="${y+26+(up?0:60)}" x2="${x+90}" y2="${y+26+(up?0:60)}" stroke="#63b98a" stroke-width="3"/>`;
+        s+=label(x+52,y+h-6,up?"in phase":"out of phase",10);
+      } else {
+        const a=P.p.pos==="A";
+        s+=`<line x1="${x+30}" y1="${a?y+56:y+72}" x2="${x+90}" y2="${a?y+24:y+72}" stroke="#63b98a" stroke-width="3"/>`;
+        s+=label(x+30,y+h-8,a?"active":"passive",10);
+      }
+    } else if(P.kind==="gnd"){
+      const [x,y,w,h]=P.box;
+      s+=`<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="6" fill="#20262f" stroke="#4d5b6e"/>`;
+      s+=label(x+12,y+21,P.label,11);
+    }
+  }
+
+  // extras
+  for(const e of state.extras){
+    const [x,y]=SLOTS[e.slot];
+    s+=`<line x1="${x}" y1="${y}" x2="${x+90}" y2="${y}" stroke="#7d8898" stroke-width="2"/>`;
+    if(e.kind==="R"){
+      s+=`<rect x="${x+26}" y="${y-11}" width="38" height="22" rx="3" fill="#7a6142" stroke="#c8b088"/>`;
+    } else {
+      s+=`<line x1="${x+38}" y1="${y-13}" x2="${x+38}" y2="${y+13}" stroke="#3fa864" stroke-width="4"/>`;
+      s+=`<line x1="${x+50}" y1="${y-13}" x2="${x+50}" y2="${y+13}" stroke="#3fa864" stroke-width="4"/>`;
+    }
+    s+=label(x,y-18,(e.kind==="R"?fmtR(e.value):fmtC(e.value)),10);
+  }
+
+  // lugs
+  const drawLug=(id,x,y,name)=>{
+    const sel = state.pending===id || state.probe[0]===id || state.probe[1]===id;
+    const conn = state.wires.some(w=>w.a===id||w.b===id);
+    let col = conn?"#c6ccd5":"#5c6878";
+    if(sel) col="#e0913a";
+    let o=`<circle cx="${x}" cy="${y}" r="${sel?7.5:5.5}" fill="${col}" stroke="#151b23" stroke-width="1.5"/>`;
+    o+=`<circle class="lug" data-lug="${id}" cx="${x}" cy="${y}" r="17" fill="transparent"/>`;
+    o+=`<text x="${x+10}" y="${y+4}" fill="#8593a6" font-size="9.5" font-family="Helvetica Neue,Arial,sans-serif">${esc(name)}</text>`;
+    return o;
+  };
+  for(const id in PARTS) for(const k in PARTS[id].lugs){
+    const [x,y]=PARTS[id].lugs[k];
+    s+=drawLug(id+"."+k,x,y,k.replace(/^L/,""));
+  }
+  for(const e of state.extras){
+    const [x,y]=SLOTS[e.slot];
+    s+=drawLug(e.id+".A",x,y,"");
+    s+=drawLug(e.id+".B",x+90,y,"");
+  }
+  $("#board").innerHTML=s;
+}
+
+/* ---------- board interaction ---------- */
+$("#board").addEventListener("click",ev=>{
+  const t=ev.target;
+  if(t.classList.contains("lug")){
+    const id=t.getAttribute("data-lug");
+    if(state.mode==="probe"){
+      if(!state.probe[0]||state.probe[1]) state.probe=[id,null];
+      else state.probe=[state.probe[0],id];
+      drawBoard(); updateProbe(); return;
+    }
+    if(state.mode==="cut"){
+      const before=state.wires.length;
+      state.wires=state.wires.filter(w=>w.a!==id&&w.b!==id);
+      if(state.wires.length!==before){ toast("Removed "+(before-state.wires.length)+" wire(s)"); markNet(); }
+      return;
+    }
+    if(!state.pending){ state.pending=id; drawBoard(); return; }
+    if(state.pending===id){ state.pending=null; drawBoard(); return; }
+    const a=state.pending, b=id;
+    state.pending=null;
+    if(state.wires.some(w=>(w.a===a&&w.b===b)||(w.a===b&&w.b===a))){ toast("Already wired"); drawBoard(); return; }
+    state.wires.push({a,b,c:state.colour});
+    markNet();
+    return;
+  }
+  if(t.classList.contains("wirehit")){
+    const i=+t.getAttribute("data-w");
+    if(state.mode==="cut"){ state.wires.splice(i,1); markNet(); toast("Wire removed"); return; }
+    state.selWire = state.selWire===state.wires[i] ? null : state.wires[i];
+    drawBoard(); renderSide();
+    return;
+  }
+  if(state.pending){ state.pending=null; drawBoard(); }
+});
+
+/* ============================================================
+   14. SIDE PANEL
+   ============================================================ */
+const openGroups={ctl:true,src:true,plot:true,diag:true,parts:false,probe:false,save:false};
+
+function grp(key,title,inner){
+  return `<section class="grp ${openGroups[key]?"":"closed"}" data-g="${key}">
+    <h2><span class="chev">▼</span>${title}</h2><div class="body">${inner}</div></section>`;
+}
+function potBlock(id){
+  const P=PARTS[id];
+  return `
+  <div class="row"><label>${P.label}</label>
+    <input type="range" min="0" max="100" value="${Math.round(P.p.rot*100)}" data-pot="${id}">
+    <span class="val readout">${Math.round(P.p.rot*100)}</span></div>
+  <div class="row"><label></label>
+    <select data-potr="${id}">
+      ${[25000,50000,100000,250000,500000,1000000].map(v=>`<option value="${v}" ${P.p.R===v?"selected":""}>${fmtR(v)}</option>`).join("")}
+    </select>
+    <select data-pott="${id}">
+      <option value="A" ${P.p.taper==="A"?"selected":""}>A · audio</option>
+      <option value="B" ${P.p.taper==="B"?"selected":""}>B · linear</option>
+    </select></div>`;
+}
+
+function renderSide(){
+  const sw=WIRE_COLOURS.map(c=>`<button class="sw" style="background:${c.v}" data-col="${c.v}" aria-pressed="${state.colour===c.v}" title="${c.n}"></button>`).join("");
+  const savedNames=listSaved();
+
+  let html="";
+  html+=grp("ctl","Controls",`
+    ${potBlock("VN")}${potBlock("VB")}${potBlock("BASS")}${potBlock("TREB")}
+    <div class="row"><label>Amp volume</label>
+      <input type="range" min="0" max="100" value="${Math.round(state.ampVol*100)}" id="ampv">
+      <span class="val readout">${Math.round(state.ampVol*100)}</span></div>
+    <div class="row"><label>Cable</label>
+      <input type="range" min="100" max="1600" step="20" value="${Math.round(state.cableC*1e12)}" id="cablec">
+      <span class="val readout">${Math.round(state.cableC*1e12)} pF</span></div>
+    <div class="btnrow">
+      <button data-tog="sw1">${PARTS.SW1.p.pos==="UP"?"In phase":"Out of phase"}</button>
+      <button data-tog="sw2">${PARTS.SW2.p.pos==="A"?"Active":"Passive"}</button>
+    </div>
+    <div class="btnrow">
+      <button data-tog="plug">${PARTS.JACK.p.plugged?"Cable plugged in":"Cable unplugged"}</button>
+      <button data-tog="batt">${PARTS.BATT.p.present?"Battery fitted":"No battery"}</button>
+    </div>`);
+
+  html+=grp("src","Signal source",`
+    <div class="btnrow">
+      <button data-src="walk" aria-pressed="${state.src==="walk"}">Walking blues</button>
+      <button data-src="pluck" aria-pressed="${state.src==="pluck"}">Single note</button>
+    </div>
+    <div class="btnrow">
+      <button data-str="4" aria-pressed="${state.strings===4}">4-string</button>
+      <button data-str="5" aria-pressed="${state.strings===5}">5-string</button>
+    </div>
+    <div class="row"><label>Tempo</label>
+      <input type="range" min="70" max="170" value="${state.tempo}" id="tempo">
+      <span class="val readout">${state.tempo} bpm</span></div>
+    <div class="row" ${state.src==="pluck"?"":'style="display:none"'}><label>Note</label>
+      <select id="plucknote">
+        ${[[23,"B0 low B"],[28,"E1"],[33,"A1"],[38,"D2"],[43,"G2"],[50,"D3"]].map(([m,n])=>`<option value="${m}" ${state.pluckNote===m?"selected":""}>${n}</option>`).join("")}
+      </select></div>
+    <p class="hint">Both pickups hear the same string. Each one taps it at a different point along the length, which is why they sound different before any wiring is involved.</p>`);
+
+  html+=grp("plot","Frequency response",`
+    <canvas id="plot"></canvas>
+    <div class="legend">
+      <span><i style="background:#6fa8d0"></i>Neck</span>
+      <span><i style="background:#c98fd0"></i>Bridge</span>
+      <span><i style="background:#8fd0a8"></i>Both summed</span>
+    </div>
+    <p class="hint">The summed curve assumes an identical signal at both pickups, so it shows the deepest cancellation the wiring can produce. What you hear is less extreme, because the two pickups sit at different points on the string.</p>`);
+
+  html+=grp("diag","Circuit check",`<div id="diagout"></div>`);
+
+  html+=grp("parts","Wiring and parts",`
+    <div class="btnrow">
+      <button data-mode="wire" aria-pressed="${state.mode==="wire"}">Wire</button>
+      <button data-mode="cut" aria-pressed="${state.mode==="cut"}">Cut</button>
+      <button data-mode="probe" aria-pressed="${state.mode==="probe"}">Probe</button>
+    </div>
+    <p class="hint">Wire: tap one lug, then another. Cut: tap a wire or a lug to remove. Probe: tap two lugs to measure.</p>
+    <div class="swatches">${sw}</div>
+    ${state.selWire?`<div class="btnrow"><button class="danger" id="delwire">Remove selected wire</button></div>`:""}
+    <div class="btnrow">
+      <button id="addR">Add resistor</button>
+      <button id="addC">Add capacitor</button>
+    </div>
+    <div class="list">${state.extras.length?state.extras.map(e=>
+      `<div><span>${e.id} · ${e.kind==="R"?"resistor":"capacitor"}</span>
+        <input type="text" data-ev="${e.id}" value="${e.kind==="R"?e.value:e.value*1e9}" style="width:74px">
+        <span style="flex:0">${e.kind==="R"?"Ω":"nF"}</span>
+        <button data-rm="${e.id}">Remove</button></div>`).join("")
+      :`<div><span>No extra parts on the board.</span></div>`}</div>
+    <div class="btnrow"><button class="danger" id="reset">Restore stock wiring</button></div>`);
+
+  html+=grp("probe","Meter",`
+    <p class="hint">Switch to Probe, then tap two lugs.</p>
+    <div class="probeout" id="probeout"></div>`);
+
+  html+=grp("save","Saved circuits",`
+    <div class="saverow"><input type="text" id="savename" placeholder="Name this circuit"><button id="savebtn">Save</button></div>
+    <div class="list" id="savelist">${savedNames.length?savedNames.map(n=>
+      `<div><span>${esc(n)}</span><button data-load="${esc(n)}">Load</button><button data-del="${esc(n)}" class="danger">Delete</button></div>`).join("")
+      :`<div><span>Nothing saved yet.</span></div>`}</div>
+    ${store.ok?"":`<p class="hint">This browser is blocking local storage, so saves will only last for this session.</p>`}`);
+
+  $("#side").innerHTML=html;
+  if(lastRes && ctx) drawPlot(lastRes,ctx.sampleRate);
+  else if(lastRes) drawPlot(lastRes,48000);
+  updateProbe();
+}
+
+function renderDiagnostics(list){
+  const d=$("#diagout"); if(!d) return;
+  d.innerHTML=list.map(([k,t])=>`<div class="diag ${k}">${esc(t)}</div>`).join("");
+}
+function updateProbe(){
+  const o=$("#probeout"); if(!o) return;
+  const [a,b]=state.probe;
+  if(!a){ o.innerHTML=`<div><span>Point A</span><span>—</span></div><div><span>Point B</span><span>—</span></div>`; return; }
+  const net=cache?cache.net:buildNet();
+  let rows=`<div><span>Point A</span><span class="readout">${esc(a)}</span></div>`;
+  rows+=`<div><span>Point B</span><span class="readout">${b?esc(b):"—"}</span></div>`;
+  if(b){
+    const r=dcResistance(net,a,b);
+    const same=net.same(a,b);
+    rows+=`<div><span>Resistance</span><span class="readout">${same?"0 Ω (same node)":(r>5e8?"open circuit":fmtR(r))}</span></div>`;
+  }
+  if(cache&&lastRes){
+    const fs=ctx?ctx.sampleRate:48000, k=Math.round(200*FFTN/fs);
+    const ia=net.i(a);
+    const s=solveAt(net,200,state.cableC);
+    if(s){
+      const ps=preampState(net);
+      const p=preampH(200,ps), out=nodeV(s,ia,2);
+      const va=nodeV(s,ia,0), vb=nodeV(s,ia,1);
+      const pr=p.re*out.re-p.im*out.im, pi=p.re*out.im+p.im*out.re;
+      const inN=nodeV(s,net.i("PRE.IN"),0), inB=nodeV(s,net.i("PRE.IN"),1);
+      const tr={re:va.re+vb.re+(inN.re+inB.re)*pr-(inN.im+inB.im)*pi,
+                im:va.im+vb.im+(inN.re+inB.re)*pi+(inN.im+inB.im)*pr};
+      const m=Math.hypot(tr.re,tr.im);
+      rows+=`<div><span>Signal at A, 200 Hz</span><span class="readout">${m<1e-6?"silent":(20*Math.log10(m)).toFixed(1)+" dB"}</span></div>`;
+    }
+  }
+  o.innerHTML=rows;
+}
+
+/* ---------- side panel events ---------- */
+$("#side").addEventListener("click",ev=>{
+  const t=ev.target.closest("button, h2");
+  if(!t) return;
+  if(t.tagName==="H2"){ const g=t.parentElement.getAttribute("data-g"); openGroups[g]=!openGroups[g]; t.parentElement.classList.toggle("closed"); return; }
+  const d=t.dataset;
+  if(d.col!==undefined){ state.colour=d.col; renderSide(); return; }
+  if(d.mode){ state.mode=d.mode; state.pending=null; if(d.mode!=="probe") state.probe=[null,null]; renderSide(); drawBoard(); return; }
+  if(d.src){ state.src=d.src; rendered=null; renderSide(); if(playing) startPlay(); return; }
+  if(d.str){ state.strings=+d.str; rendered=null; renderSide(); if(playing) startPlay(); return; }
+  if(d.tog==="sw1"){ PARTS.SW1.p.pos = PARTS.SW1.p.pos==="UP"?"DOWN":"UP"; markNet(); renderSide(); return; }
+  if(d.tog==="sw2"){ PARTS.SW2.p.pos = PARTS.SW2.p.pos==="A"?"B":"A"; markNet(); renderSide(); return; }
+  if(d.tog==="plug"){ PARTS.JACK.p.plugged=!PARTS.JACK.p.plugged; markNet(); renderSide(); return; }
+  if(d.tog==="batt"){ PARTS.BATT.p.present=!PARTS.BATT.p.present; markNet(); renderSide(); return; }
+  if(t.id==="addR"||t.id==="addC"){
+    const used=state.extras.map(e=>e.slot);
+    const slot=SLOTS.findIndex((_,i)=>!used.includes(i));
+    if(slot<0){ toast("No free slots on the board"); return; }
+    state.extras.push({id:(t.id==="addR"?"R":"C")+(nextExtra++), kind:t.id==="addR"?"R":"C",
+                       value:t.id==="addR"?100000:47e-9, slot});
+    markNet(); renderSide(); return;
+  }
+  if(d.rm){ state.extras=state.extras.filter(e=>e.id!==d.rm); markNet(); renderSide(); return; }
+  if(t.id==="delwire"){ state.wires=state.wires.filter(w=>w!==state.selWire); state.selWire=null; markNet(); renderSide(); return; }
+  if(t.id==="reset"){ state.wires=stockWires(); state.extras=[]; state.selWire=null; markNet(); renderSide(); toast("Stock wiring restored"); return; }
+  if(t.id==="savebtn"){ doSave(); return; }
+  if(d.load){ doLoad(d.load); return; }
+  if(d.del){ delSaved(d.del); renderSide(); return; }
+});
+$("#side").addEventListener("input",ev=>{
+  const t=ev.target, d=t.dataset;
+  if(d.pot){
+    PARTS[d.pot].p.rot=+t.value/100; t.nextElementSibling.textContent=t.value;
+    // volume pots load the pickups, so the network has to be re-solved;
+    // the EQ pots only steer the preamp block, which is a cheap recombine
+    if(d.pot==="VN"||d.pot==="VB") markNet(); else markCtl();
+    return;
+  }
+  if(t.id==="ampv"){ state.ampVol=+t.value/100; t.nextElementSibling.textContent=t.value;
+    if(ctx&&nodes) nodes.amp.gain.setTargetAtTime(state.ampVol,ctx.currentTime,0.02); return; }
+  if(t.id==="cablec"){ state.cableC=+t.value*1e-12; t.nextElementSibling.textContent=t.value+" pF"; markNet(); return; }
+  if(t.id==="tempo"){ state.tempo=+t.value; t.nextElementSibling.textContent=t.value+" bpm"; return; }
+});
+$("#side").addEventListener("change",ev=>{
+  const t=ev.target, d=t.dataset;
+  if(d.potr){ PARTS[d.potr].p.R=+t.value; markNet(); drawBoard(); return; }
+  if(d.pott){ PARTS[d.pott].p.taper=t.value; markNet(); drawBoard(); return; }
+  if(d.ev){ const e=state.extras.find(x=>x.id===d.ev); if(!e) return;
+    const v=parseFloat(t.value); if(isFinite(v)&&v>0) e.value = e.kind==="R"? v : v*1e-9;
+    markNet(); drawBoard(); return; }
+  if(t.id==="plucknote"){ state.pluckNote=+t.value; rendered=null; if(playing) startPlay(); return; }
+  if(t.id==="tempo"){ rendered=null; if(playing) startPlay(); return; }
+});
+$("#side").addEventListener("pointerup",ev=>{
+  if(ev.target.id==="tempo"){ rendered=null; if(playing) startPlay(); }
+});
+
+/* ============================================================
+   15. SAVE / LOAD
+   ============================================================ */
+const KEY="bassLab.v1";
+function readAll(){ try{ return JSON.parse(store.get(KEY)||"{}"); }catch(e){ return {}; } }
+function listSaved(){ return Object.keys(readAll()).sort(); }
+function snapshot(){
+  const p={};
+  for(const id in PARTS) if(PARTS[id].p) p[id]=JSON.parse(JSON.stringify(PARTS[id].p));
+  return {wires:state.wires, extras:state.extras, parts:p, cableC:state.cableC,
+          src:state.src, strings:state.strings, tempo:state.tempo, next:nextExtra};
+}
+function doSave(){
+  const n=($("#savename").value||"").trim();
+  if(!n){ toast("Give the circuit a name first"); return; }
+  const all=readAll(); all[n]=snapshot(); store.set(KEY,JSON.stringify(all));
+  toast("Saved "+n); renderSide();
+}
+function doLoad(n){
+  const all=readAll(), s=all[n]; if(!s){ toast("Not found"); return; }
+  state.wires=s.wires; state.extras=s.extras||[]; state.cableC=s.cableC||600e-12;
+  state.src=s.src||"walk"; state.strings=s.strings||5; state.tempo=s.tempo||120;
+  nextExtra=s.next||1;
+  for(const id in s.parts) if(PARTS[id]&&PARTS[id].p) Object.assign(PARTS[id].p,s.parts[id]);
+  rendered=null; state.selWire=null; markNet(); renderSide();
+  if(playing) startPlay();
+  toast("Loaded "+n);
+}
+function delSaved(n){ const all=readAll(); delete all[n]; store.set(KEY,JSON.stringify(all)); toast("Deleted "+n); }
+
+/* ============================================================
+   16. BOOT
+   ============================================================ */
+$("#playBtn").addEventListener("click",()=>{ playing?stopPlay():startPlay(); });
+window.addEventListener("resize",()=>{ if(lastRes) drawPlot(lastRes,ctx?ctx.sampleRate:48000); });
+
+renderSide();
+recompute(true);
+</script>
+</body>
+</html>
