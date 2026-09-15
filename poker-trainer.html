@@ -206,11 +206,12 @@ const BOT_PROFILES = [
 const PLAYER_ORDER = ["you", "doug", "pam", "ray"];
 
 function decideBotAction(bot, board) {
-  if (bot.stack <= 0) return { type: "fold" };
+  const available = bot.stack - bot.chipsInHand;
+  if (available <= 0) return { type: "fold" };
   const eq = board.length === 0 ? preflopTier(bot.hole).pct : estimateEquity(bot.hole, board, 1, 60);
   const threshold = 45 - bot.looseness * 15;
 
-  if (eq > 68) return { type: "raise", amount: Math.min(BIG_BLIND * 2, bot.stack) };
+  if (eq > 68) return { type: "raise", amount: Math.min(BIG_BLIND * 2, available) };
   if (eq > threshold) return { type: board.length === 0 || Math.random() > 0.5 ? "call" : "check" };
   if (Math.random() < bot.looseness * 0.25) return { type: "call" };
   return { type: "fold" };
@@ -334,9 +335,10 @@ function applyYourAction(state, type, raiseBy = 0) {
     return resolveAfterFold({ ...state, players, log: [`You fold.`, ...state.log] });
   }
 
+  const available = you.stack - you.chipsInHand;
   let amount = 0, note;
-  if (type === "call") { amount = Math.min(state.toCall, you.stack); note = amount < state.toCall ? `You call all-in for ${amount}.` : `You call ${amount}.`; }
-  else if (type === "raise") { const desired = state.toCall + raiseBy; amount = Math.min(desired, you.stack); note = amount < desired ? `You go all-in for ${amount}.` : `You raise to ${amount}.`; }
+  if (type === "call") { amount = Math.min(state.toCall, available); note = amount < state.toCall ? `You call all-in for ${amount}.` : `You call ${amount}.`; }
+  else if (type === "raise") { const desired = state.toCall + raiseBy; amount = Math.min(desired, available); note = amount < desired ? `You go all-in for ${amount}.` : `You raise to ${amount}.`; }
   else note = "You check.";
 
   players = { ...players, you: { ...you, chipsInHand: you.chipsInHand + amount } };
@@ -370,7 +372,7 @@ function runBotsThenAdvance(state) {
     const decision = decideBotAction(bot, state.board);
     if (decision.type === "fold") { players = { ...players, [id]: { ...bot, folded: true } }; log.unshift(`${bot.name} folds.`); continue; }
     if (decision.type === "check") { log.unshift(`${bot.name} checks.`); continue; }
-    const callAmount = decision.type === "raise" ? decision.amount : Math.min(BIG_BLIND, bot.stack);
+    const callAmount = decision.type === "raise" ? decision.amount : Math.min(BIG_BLIND, bot.stack - bot.chipsInHand);
     const updatedBot = { ...bot, chipsInHand: bot.chipsInHand + callAmount };
     players = { ...players, [id]: updatedBot };
     pot += callAmount;
@@ -677,6 +679,7 @@ function TierTable({ currentTier }) {
    ========================================================================= */
 function PokerTrainer() {
   const [state, dispatch] = useReducer(reducer, undefined, initialState);
+  const [helpEnabled, setHelpEnabled] = React.useState(true);
   const { stage, street, board, players, pot, toCall, log, advice, explainer, gameOverMessage, pendingGameOverMessage, handsPlayed, handsWon, netChips } = state;
   const you = players.you;
   const currentTier = board.length === 0 && you.hole.length ? preflopTier(you.hole).tier : null;
@@ -694,6 +697,11 @@ function PokerTrainer() {
             <div>Hands: {handsWon}/{handsPlayed} won</div>
           </div>
         </header>
+
+        <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, opacity: .75, cursor: "pointer" }}>
+          <input type="checkbox" checked={helpEnabled} onChange={(e) => setHelpEnabled(e.target.checked)} />
+          Show help (tier highlight + Explain button)
+        </label>
 
         {stage === "gameover" && (
           <div style={{ textAlign: "center", padding: "32px 0" }}>
@@ -742,15 +750,15 @@ function PokerTrainer() {
               </div>
             )}
 
-            {you.stack > 0 ? (
+            {you.stack - you.chipsInHand > 0 ? (
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 14 }}>
                 <ActionButton onClick={() => dispatch({ type: "PLAYER_ACTION", action: "fold" })} label="Fold" color="#8a3a3a" />
                 {toCall === 0
                   ? <ActionButton onClick={() => dispatch({ type: "PLAYER_ACTION", action: "check" })} label="Check (0)" color="#3a5a8a" />
-                  : <ActionButton onClick={() => dispatch({ type: "PLAYER_ACTION", action: "call" })} label={`Call (${Math.min(toCall, you.stack)})`} color="#3a5a8a" />}
+                  : <ActionButton onClick={() => dispatch({ type: "PLAYER_ACTION", action: "call" })} label={`Call (${Math.min(toCall, you.stack - you.chipsInHand)})`} color="#3a5a8a" />}
                 <ActionButton onClick={() => dispatch({ type: "PLAYER_ACTION", action: "raise", raiseBy: 50 })} label={`Raise to ${Math.min(toCall + 50, you.stack)}`} color="#7a8a3a" />
                 <ActionButton onClick={() => dispatch({ type: "PLAYER_ACTION", action: "raise", raiseBy: 100 })} label={`Raise to ${Math.min(toCall + 100, you.stack)}`} color="#8a7a3a" />
-                <ActionButton onClick={() => dispatch({ type: "EXPLAIN" })} label="Explain" color="#5a4a7a" />
+                {helpEnabled && <ActionButton onClick={() => dispatch({ type: "EXPLAIN" })} label="Explain" color="#5a4a7a" />}
               </div>
             ) : (
               <div style={{ fontSize: 13, opacity: .7, marginBottom: 14 }}>
@@ -758,7 +766,7 @@ function PokerTrainer() {
               </div>
             )}
 
-            {explainer && (
+            {helpEnabled && explainer && (
               <div style={{ padding: "12px 14px", background: "#3a2a5a33", border: "1px solid #9a7ad455", borderRadius: 6, fontSize: 13, lineHeight: 1.7 }}>
                 {explainer.map((l, i) => <div key={i} style={{ marginBottom: 6, fontWeight: l.startsWith("Do:") ? "bold" : "normal", color: l.startsWith("Do:") ? COLORS.gold : "inherit" }}>{l}</div>)}
               </div>
@@ -767,7 +775,7 @@ function PokerTrainer() {
         )}
 
         <LogPanel log={log} />
-        <TierTable currentTier={currentTier} />
+        {helpEnabled && <TierTable currentTier={currentTier} />}
       </div>
     </div>
   );
